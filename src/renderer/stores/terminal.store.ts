@@ -4,27 +4,30 @@ import { getApi } from '../lib/ipc';
 
 interface TerminalStore {
   terminals: Map<string, TerminalInstance>;
-  createTerminal: (cwd: string, shell?: string) => Promise<string>;
+  createTerminal: (cwd: string, shell?: string, existingId?: string) => Promise<string>;
   killTerminal: (id: string) => Promise<void>;
   updateTerminal: (id: string, partial: Partial<TerminalInstance>) => void;
   removeTerminal: (id: string) => void;
+  getTitle: (id: string) => string;
 }
 
 export const useTerminalStore = create<TerminalStore>((set, get) => ({
   terminals: new Map(),
 
-  createTerminal: async (cwd: string, shell?: string) => {
-    const id = crypto.randomUUID();
+  createTerminal: async (cwd: string, shell?: string, existingId?: string) => {
+    const id = existingId || crypto.randomUUID();
     const cols = 80;
     const rows = 24;
 
-    const response = await getApi().pty.create({ id, cwd, shell, cols, rows });
+    // Pass undefined shell to let the main process detect it; never pass "default"
+    const actualShell = (shell && shell !== 'default') ? shell : undefined;
+    const response = await getApi().pty.create({ id, cwd, shell: actualShell, cols, rows });
 
     const terminal: TerminalInstance = {
       id,
       pid: response.pid,
       cwd,
-      shell: shell || 'default',
+      shell: actualShell || 'default',
       title: `Terminal ${get().terminals.size + 1}`,
       status: 'running',
       createdAt: Date.now(),
@@ -65,5 +68,9 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
       terminals.delete(id);
       return { terminals };
     });
+  },
+
+  getTitle: (id: string) => {
+    return get().terminals.get(id)?.title || 'Terminal';
   },
 }));

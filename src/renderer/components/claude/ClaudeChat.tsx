@@ -54,10 +54,21 @@ export function ClaudeChat({ messages }: ClaudeChatProps) {
               }
               return null;
             })}
+            {msg.role === 'assistant' && msg.inputTokens != null && (
+              <div className="text-[11px] text-[var(--text-muted)] mt-1">
+                ↑{formatTokens(msg.inputTokens)} ↓{formatTokens(msg.outputTokens || 0)}
+              </div>
+            )}
           </div>
         </div>
       ))}
       <div ref={bottomRef} />
     </div>
   );
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
 }

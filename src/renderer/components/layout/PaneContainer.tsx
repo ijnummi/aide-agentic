@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { PaneLeaf, TabItem } from '../../../shared/types/layout';
 import { TabBar } from './TabBar';
 import { TerminalPanel } from '../terminal/TerminalPanel';
@@ -9,7 +9,8 @@ import { PRDetail } from '../review/PRDetail';
 import { useLayoutStore } from '../../stores/layout.store';
 import { useTerminalStore } from '../../stores/terminal.store';
 import { useGitHubStore } from '../../stores/github.store';
-import { disposeTerminal } from '../../hooks/useTerminal';
+import { disposeTerminal, getTerminalCache } from '../../hooks/useTerminal';
+import { getSettings } from '../../stores/settings.store';
 import type { DiffFile } from '../../../shared/types/git';
 
 interface PaneContainerProps {
@@ -30,7 +31,7 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
     const tab: TabItem = {
       id: terminalId,
       type: 'terminal',
-      title: 'Terminal',
+      title: useTerminalStore.getState().getTitle(terminalId),
       metadata: { terminalId },
     };
     addTab(pane.id, tab);
@@ -57,7 +58,7 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
       const tab: TabItem = {
         id: terminalId,
         type: 'terminal',
-        title: 'Terminal',
+        title: useTerminalStore.getState().getTitle(terminalId),
         metadata: { terminalId },
       };
       splitPane(pane.id, direction, tab);
@@ -81,10 +82,32 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
     />
   ) : null;
 
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    hoverTimerRef.current = setTimeout(() => {
+      setActivePane(pane.id);
+      // Focus the terminal if the active tab is a terminal
+      const tab = pane.tabs.find((t) => t.id === pane.activeTabId);
+      if (tab?.type === 'terminal') {
+        getTerminalCache().get(tab.id)?.term.focus();
+      }
+    }, getSettings().timing.focusFollowsMouseDelay);
+  }, [pane.id, pane.activeTabId, pane.tabs, setActivePane]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }, []);
+
   return (
     <div
       className="flex flex-col h-full"
       onClick={() => setActivePane(pane.id)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <TabBar
         tabs={pane.tabs}
@@ -97,6 +120,7 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
       <div className="flex-1 overflow-hidden">
         {activeTab?.type === 'terminal' && (
           <TerminalPanel
+            key={activeTab.id}
             terminalId={activeTab.id}
             isActive={isActivePane}
           />
@@ -117,6 +141,17 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
         {activeTab && !['terminal', 'claude', 'diff', 'pr'].includes(activeTab.type) && (
           <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
             {activeTab.type} panel (coming soon)
+          </div>
+        )}
+        {!activeTab && (
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--text-muted)]">
+            <span className="text-sm">No open tabs</span>
+            <button
+              className="px-3 py-1 text-xs rounded bg-[var(--bg-surface)] hover:bg-[var(--bg-overlay)] text-[var(--text-primary)]"
+              onClick={handleNewTerminal}
+            >
+              New Terminal
+            </button>
           </div>
         )}
       </div>

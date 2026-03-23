@@ -9,23 +9,40 @@ import { useUIStore } from '../../stores/ui.store';
 import { useClaude } from '../../hooks/useClaude';
 import { useGit } from '../../hooks/useGit';
 import { useWorktree } from '../../hooks/useWorktree';
+import { usePersistence } from '../../hooks/usePersistence';
+import { useKeyboard } from '../../hooks/useKeyboard';
+import { useWorkspaceStore } from '../../stores/workspace.store';
 import { getApi } from '../../lib/ipc';
 import type { TabItem } from '../../../shared/types/layout';
 
 export function AppShell() {
   const root = useLayoutStore((s) => s.root);
-  const initialized = useLayoutStore((s) => s.initialized);
-  const activePaneId = useLayoutStore((s) => s.activePaneId);
   const initializeWithTerminal = useLayoutStore((s) => s.initializeWithTerminal);
-  const splitPane = useLayoutStore((s) => s.splitPane);
   const addTab = useLayoutStore((s) => s.addTab);
+  const activePaneId = useLayoutStore((s) => s.activePaneId);
   const createTerminal = useTerminalStore((s) => s.createTerminal);
   const sidebarVisible = useUIStore((s) => s.sidebarVisible);
   const { startSession } = useClaude();
+  const { restore } = usePersistence();
+  const setProjectPath = useWorkspaceStore((s) => s.setProjectPath);
   const [cwd, setCwd] = useState<string>('');
   const bootstrapRef = useRef(false);
   useGit(cwd);
   useWorktree(cwd);
+
+  const handleNewClaudeSession = useCallback(() => {
+    if (!cwd) return;
+    const sessionId = startSession(cwd);
+    const tab: TabItem = {
+      id: sessionId,
+      type: 'claude',
+      title: 'Claude',
+      metadata: { sessionId },
+    };
+    addTab(activePaneId, tab);
+  }, [cwd, startSession, addTab, activePaneId]);
+
+  useKeyboard({ cwd, onNewClaudeSession: handleNewClaudeSession });
 
   useEffect(() => {
     getApi()
@@ -33,82 +50,20 @@ export function AppShell() {
       .then((info) => setCwd(info.cwd));
   }, []);
 
-  // Bootstrap: create the first terminal and initialize layout
+  // Bootstrap: try to restore session, else create first terminal
   useEffect(() => {
     if (!cwd || bootstrapRef.current) return;
     bootstrapRef.current = true;
-    createTerminal(cwd).then((terminalId) => {
-      initializeWithTerminal(terminalId);
+    setProjectPath(cwd);
+
+    restore(cwd).then((restored) => {
+      if (!restored) {
+        createTerminal(cwd).then((terminalId) => {
+          initializeWithTerminal(terminalId);
+        });
+      }
     });
-  }, [cwd, createTerminal, initializeWithTerminal]);
-
-  const handleKeyDown = useCallback(
-    async (e: KeyboardEvent) => {
-      if (!cwd || !initialized) return;
-
-      // Ctrl+\ — split horizontal
-      if (e.ctrlKey && !e.shiftKey && e.code === 'Backslash') {
-        e.preventDefault();
-        const terminalId = await createTerminal(cwd);
-        const tab: TabItem = {
-          id: terminalId,
-          type: 'terminal',
-          title: 'Terminal',
-          metadata: { terminalId },
-        };
-        splitPane(activePaneId, 'horizontal', tab);
-        return;
-      }
-
-      // Ctrl+Shift+\ — split vertical
-      if (e.ctrlKey && e.shiftKey && e.code === 'Backslash') {
-        e.preventDefault();
-        const terminalId = await createTerminal(cwd);
-        const tab: TabItem = {
-          id: terminalId,
-          type: 'terminal',
-          title: 'Terminal',
-          metadata: { terminalId },
-        };
-        splitPane(activePaneId, 'vertical', tab);
-        return;
-      }
-
-      // Ctrl+T — new terminal tab in active pane
-      if (e.ctrlKey && !e.shiftKey && e.key === 't') {
-        e.preventDefault();
-        const terminalId = await createTerminal(cwd);
-        const tab: TabItem = {
-          id: terminalId,
-          type: 'terminal',
-          title: 'Terminal',
-          metadata: { terminalId },
-        };
-        addTab(activePaneId, tab);
-        return;
-      }
-
-      // Ctrl+Shift+C — new Claude Code session tab
-      if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-        e.preventDefault();
-        const sessionId = startSession(cwd);
-        const tab: TabItem = {
-          id: sessionId,
-          type: 'claude',
-          title: 'Claude',
-          metadata: { sessionId },
-        };
-        addTab(activePaneId, tab);
-        return;
-      }
-    },
-    [cwd, initialized, activePaneId, splitPane, addTab, createTerminal, startSession],
-  );
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  }, [cwd, createTerminal, initializeWithTerminal, restore, setProjectPath]);
 
   if (!cwd || !root) {
     return (

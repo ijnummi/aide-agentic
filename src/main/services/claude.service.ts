@@ -33,6 +33,10 @@ export class ClaudeService {
     args.push('--output-format', 'stream-json');
     args.push('--verbose');
 
+    if (request.model) {
+      args.push('--model', request.model);
+    }
+
     if (request.resume) {
       args.push('--resume', request.resume);
     }

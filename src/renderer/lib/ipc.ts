@@ -32,6 +32,7 @@ import type {
   GitHubPRReviewRequest,
   GitHubPRCommentRequest,
 } from '../../shared/types/github';
+import type { SessionState, SessionMeta } from '../../shared/types/persistence';
 
 export interface AideAPI {
   pty: {
@@ -70,6 +71,17 @@ export interface AideAPI {
     getPRDiff(cwd: string, number: number): Promise<string>;
     submitReview(req: GitHubPRReviewRequest): Promise<void>;
     addComment(req: GitHubPRCommentRequest): Promise<void>;
+  };
+  session: {
+    save(state: SessionState): Promise<void>;
+    load(projectPath: string): Promise<SessionState | null>;
+    list(): Promise<SessionMeta[]>;
+  };
+  window: {
+    minimize(): Promise<void>;
+    maximize(): Promise<void>;
+    close(): Promise<void>;
+    isMaximized(): Promise<boolean>;
   };
   shell: {
     info(): Promise<ShellInfo>;

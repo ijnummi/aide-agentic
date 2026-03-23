@@ -4,11 +4,13 @@ import { registerClaudeHandlers } from './claude.ipc';
 import { registerGitHandlers } from './git.ipc';
 import { registerWorktreeHandlers } from './worktree.ipc';
 import { registerGitHubHandlers } from './github.ipc';
+import { registerPersistenceHandlers } from './persistence.ipc';
 import type { PtyService } from '../services/pty.service';
 import type { ClaudeService } from '../services/claude.service';
 import type { GitService } from '../services/git.service';
 import type { WorktreeService } from '../services/worktree.service';
 import type { GitHubService } from '../services/github.service';
+import type { PersistenceService } from '../services/persistence.service';
 
 export function registerAllHandlers(
   ptyService: PtyService,
@@ -16,6 +18,7 @@ export function registerAllHandlers(
   gitService: GitService,
   worktreeService: WorktreeService,
   githubService: GitHubService,
+  persistenceService: PersistenceService,
   getWindow: () => BrowserWindow | null,
 ) {
   registerPtyHandlers(ptyService, getWindow);
@@ -23,4 +26,5 @@ export function registerAllHandlers(
   registerGitHandlers(gitService);
   registerWorktreeHandlers(worktreeService);
   registerGitHubHandlers(githubService);
+  registerPersistenceHandlers(persistenceService);
 }

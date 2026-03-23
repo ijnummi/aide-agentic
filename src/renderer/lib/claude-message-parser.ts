@@ -45,6 +45,8 @@ export function parseClaudeEvent(rawEvent: ClaudeRawEvent): ParsedUpdate | null 
           role: 'assistant',
           blocks,
           timestamp: Date.now(),
+          inputTokens: apiMessage.usage?.input_tokens,
+          outputTokens: apiMessage.usage?.output_tokens,
         },
       };
     }

@@ -15,13 +15,13 @@ export function ActivityBar() {
   const setSidebarPanel = useUIStore((s) => s.setSidebarPanel);
 
   return (
-    <div className="flex flex-col items-center w-12 bg-[var(--bg-secondary)] border-r border-[var(--border)] py-1 select-none">
+    <div className="flex flex-col items-center w-14 bg-[var(--bg-secondary)] border-r border-[var(--border)] py-1 select-none">
       {items.map(({ panel, icon: Icon, label }) => {
         const isActive = sidebarVisible && activeSidebarPanel === panel;
         return (
           <button
             key={panel}
-            className={`flex items-center justify-center w-10 h-10 my-0.5 rounded transition-colors ${
+            className={`flex items-center justify-center w-12 h-12 my-0.5 rounded transition-colors ${
               isActive
                 ? 'text-[var(--text-primary)] bg-[var(--bg-surface)] border-l-2 border-l-[var(--accent)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -29,7 +29,7 @@ export function ActivityBar() {
             onClick={() => setSidebarPanel(panel)}
             title={label}
           >
-            <Icon size={20} />
+            <Icon size={24} />
           </button>
         );
       })}

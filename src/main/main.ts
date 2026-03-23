@@ -6,6 +6,7 @@ import { ClaudeService } from './services/claude.service';
 import { GitService } from './services/git.service';
 import { WorktreeService } from './services/worktree.service';
 import { GitHubService } from './services/github.service';
+import { PersistenceService } from './services/persistence.service';
 import { registerAllHandlers } from './ipc/index';
 import { detectShell } from './util/shell';
 import { getDefaultCwd } from './util/platform';
@@ -20,6 +21,7 @@ const claudeService = new ClaudeService();
 const gitService = new GitService();
 const worktreeService = new WorktreeService();
 const githubService = new GitHubService();
+const persistenceService = new PersistenceService();
 let mainWindow: BrowserWindow | null = null;
 
 function getWindow(): BrowserWindow | null {
@@ -33,6 +35,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'AIDE',
+    frame: false,
     backgroundColor: '#1e1e2e',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -40,6 +43,8 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  mainWindow.removeMenu();
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -49,7 +54,7 @@ function createWindow() {
     );
   }
 
-  if (process.env.NODE_ENV === 'development' || process.argv.includes('--devtools')) {
+  if (process.argv.includes('--devtools')) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -57,6 +62,18 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// Window control handlers
+ipcMain.handle('window:minimize', () => mainWindow?.minimize());
+ipcMain.handle('window:maximize', () => {
+  if (mainWindow?.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow?.maximize();
+  }
+});
+ipcMain.handle('window:close', () => mainWindow?.close());
+ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false);
 
 // Shell info handler
 ipcMain.handle(IPC.SHELL_INFO, () => ({
@@ -74,7 +91,7 @@ ipcMain.handle(IPC.OPEN_EXTERNAL, (_event, url: string) => {
 });
 
 // Register IPC handlers
-registerAllHandlers(ptyService, claudeService, gitService, worktreeService, githubService, getWindow);
+registerAllHandlers(ptyService, claudeService, gitService, worktreeService, githubService, persistenceService, getWindow);
 
 app.on('ready', createWindow);
 

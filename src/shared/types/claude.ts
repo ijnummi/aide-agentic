@@ -5,6 +5,7 @@ export interface ClaudeStartRequest {
   cwd: string;
   prompt?: string;
   resume?: string;
+  model?: string;
   allowedTools?: string[];
 }
 
@@ -41,6 +42,7 @@ export interface ClaudeAPIMessage {
   content: ClaudeContentBlock[];
   model?: string;
   stop_reason?: string;
+  usage?: { input_tokens: number; output_tokens: number };
 }
 
 export type ClaudeContentBlock =
@@ -69,6 +71,8 @@ export interface ClaudeMessage {
   role: 'user' | 'assistant';
   blocks: (ClaudeTextBlock | ClaudeToolUseBlock)[];
   timestamp: number;
+  inputTokens?: number;
+  outputTokens?: number;
 }
 
 export interface ClaudeSession {
@@ -76,9 +80,12 @@ export interface ClaudeSession {
   claudeSessionId?: string;
   cwd: string;
   worktreeId?: string;
+  model?: string;
   status: ClaudeSessionStatus;
   messages: ClaudeMessage[];
   cost?: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   error?: string;
   createdAt: number;
 }

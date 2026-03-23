@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getSettings } from './settings.store';
 
 export type SidebarPanel = 'terminals' | 'claude-sessions' | 'git' | 'worktrees' | 'github';
 
@@ -16,7 +17,7 @@ interface UIStore {
 
 export const useUIStore = create<UIStore>((set, get) => ({
   sidebarVisible: false,
-  sidebarWidth: 250,
+  sidebarWidth: getSettings().layout.sidebarDefaultWidth,
   activeSidebarPanel: 'terminals',
   theme: 'dark',
 
@@ -34,7 +35,8 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   setSidebarWidth: (width) => {
-    set({ sidebarWidth: Math.max(150, Math.min(500, width)) });
+    const { sidebarMinWidth, sidebarMaxWidth } = getSettings().layout;
+    set({ sidebarWidth: Math.max(sidebarMinWidth, Math.min(sidebarMaxWidth, width)) });
   },
 
   setTheme: (theme) => {

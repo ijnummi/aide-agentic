@@ -19,14 +19,14 @@ export function SessionList({ onSelectSession, onNewSession }: SessionListProps)
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-2 py-1.5">
-        <span className="text-xs text-[var(--text-muted)]">
+        <span className="text-sm text-[var(--text-muted)]">
           {sessionList.length} session{sessionList.length !== 1 ? 's' : ''}
         </span>
         <button
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded text-[var(--accent)] hover:bg-[var(--bg-surface)] transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-sm rounded text-[var(--accent)] hover:bg-[var(--bg-surface)] transition-colors"
           onClick={onNewSession}
         >
-          <Plus size={12} />
+          <Plus size={16} />
           New
         </button>
       </div>
@@ -35,14 +35,14 @@ export function SessionList({ onSelectSession, onNewSession }: SessionListProps)
         {sessionList.map((session) => (
           <button
             key={session.id}
-            className={`flex items-center gap-2 w-full px-2 py-2 text-left text-xs transition-colors ${
+            className={`flex items-center gap-2.5 w-full px-2 py-2 text-left text-sm transition-colors ${
               session.id === activeSessionId
                 ? 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'
             }`}
             onClick={() => onSelectSession(session.id)}
           >
-            <Bot size={14} className="flex-shrink-0" />
+            <Bot size={18} className="flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="truncate">
                 {session.cwd.split('/').pop() || 'Session'}

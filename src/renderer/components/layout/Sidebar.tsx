@@ -7,6 +7,7 @@ import { SessionList } from '../claude/SessionList';
 import { GitStatus } from '../git/GitStatus';
 import { BranchSelector } from '../git/BranchSelector';
 import { CommitPanel } from '../git/CommitPanel';
+import { TerminalList } from '../terminal/TerminalList';
 import { WorktreeList } from '../worktree/WorktreeList';
 import { PRList } from '../review/PRList';
 import { useGitHubStore } from '../../stores/github.store';
@@ -27,6 +28,7 @@ export function Sidebar() {
   const activeSidebarPanel = useUIStore((s) => s.activeSidebarPanel);
   const sidebarWidth = useUIStore((s) => s.sidebarWidth);
   const addTab = useLayoutStore((s) => s.addTab);
+  const focusOrAddTab = useLayoutStore((s) => s.focusOrAddTab);
   const activePaneId = useLayoutStore((s) => s.activePaneId);
   const setActiveSession = useClaudeStore((s) => s.setActiveSession);
   const getDiff = useGitStore((s) => s.getDiff);
@@ -45,7 +47,7 @@ export function Sidebar() {
       title: 'Claude',
       metadata: { sessionId },
     };
-    addTab(activePaneId, tab);
+    focusOrAddTab(activePaneId, tab);
   };
 
   const handleNewSession = () => {
@@ -79,10 +81,15 @@ export function Sidebar() {
       className="flex flex-col bg-[var(--bg-secondary)] border-r border-[var(--border)] overflow-hidden"
       style={{ width: sidebarWidth, minWidth: 150 }}
     >
-      <div className="flex items-center h-9 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">
+      <div className="flex items-center h-10 px-3 text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">
         {panelTitles[activeSidebarPanel] || activeSidebarPanel}
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto text-sm">
+        {activeSidebarPanel === 'terminals' && cwd && (
+          <div className="p-1">
+            <TerminalList cwd={cwd} />
+          </div>
+        )}
         {activeSidebarPanel === 'claude-sessions' && (
           <SessionList
             onSelectSession={handleSelectSession}
@@ -115,7 +122,7 @@ export function Sidebar() {
             }}
           />
         )}
-        {!['claude-sessions', 'git', 'worktrees', 'github'].includes(activeSidebarPanel) && (
+        {!['terminals', 'claude-sessions', 'git', 'worktrees', 'github'].includes(activeSidebarPanel) && (
           <div className="p-2 text-[var(--text-muted)] text-xs">
             {activeSidebarPanel} panel content coming soon
           </div>

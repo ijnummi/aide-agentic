@@ -112,23 +112,23 @@
 - [ ] 95. Verify: list PRs, view diff, submit review
 
 ## Phase 7 — Persistence
-- [ ] 96. Implement `src/shared/types/persistence.ts` — SessionState schema
-- [ ] 97. Implement `src/main/services/persistence.service.ts` — electron-store
-- [ ] 98. Implement `src/main/ipc/persistence.ipc.ts` — session save/load IPC
-- [ ] 99. Update `src/main/preload.ts` — add session API to contextBridge
-- [ ] 100. Implement `src/renderer/stores/workspace.store.ts` — project path, settings
-- [ ] 101. Implement `src/renderer/hooks/usePersistence.ts` — auto-save hook
-- [ ] 102. Add `@xterm/addon-serialize` — terminal scrollback serialization
-- [ ] 103. Implement restore-on-launch flow (layout + scrollback + Claude history)
-- [ ] 104. Implement `src/main/services/window.service.ts` — window management
+- [x] 96. Implement `src/shared/types/persistence.ts` — SessionState schema
+- [x] 97. Implement `src/main/services/persistence.service.ts` — electron-store
+- [x] 98. Implement `src/main/ipc/persistence.ipc.ts` — session save/load IPC
+- [x] 99. Update `src/main/preload.ts` — add session API to contextBridge
+- [x] 100. Implement `src/renderer/stores/workspace.store.ts` — project path, settings
+- [x] 101. Implement `src/renderer/hooks/usePersistence.ts` — auto-save + restore
+- [x] 102. Add `@xterm/addon-serialize` — terminal scrollback serialization
+- [x] 103. Implement restore-on-launch flow (layout + scrollback + Claude history)
+- [ ] 104. ~~Implement `src/main/services/window.service.ts`~~ — deferred (single window for now)
 - [ ] 105. Verify: close and reopen app, verify full state restoration
 
 ## Phase 8 — Polish
-- [ ] 106. Implement `src/renderer/hooks/useKeyboard.ts` — global keyboard shortcuts
-- [ ] 107. Implement command palette
-- [ ] 108. Dark/light theme toggle
-- [ ] 109. Error handling + toast notifications
-- [ ] 110. Implement `src/renderer/components/shared/ContextMenu.tsx`
+- [x] 106. Implement `src/renderer/hooks/useKeyboard.ts` — global keyboard shortcuts (Ctrl+B, Ctrl+S, Ctrl+T, Ctrl+\, Ctrl+Shift+\, Ctrl+Shift+C)
+- [x] 107. Implement command palette (Ctrl+Shift+P) — fuzzy search, arrow keys, enter to execute
+- [x] 108. Dark/light theme toggle (Catppuccin Mocha/Latte) — via command palette or store
+- [x] 109. Error handling + toast notifications (success/error/info with auto-dismiss)
+- [ ] 110. ~~Implement `src/renderer/components/shared/ContextMenu.tsx`~~ — deferred
 
 ## Phase 9 — Testing
 - [ ] 111. Configure `vitest.config.ts`

@@ -9,7 +9,8 @@ interface ClaudeStore {
   sessions: Map<string, ClaudeSession>;
   activeSessionId: string | null;
 
-  createSession: (cwd: string, worktreeId?: string) => string;
+  createSession: (cwd: string, worktreeId?: string, existingId?: string, model?: string) => string;
+  setModel: (sessionId: string, model: string) => void;
   removeSession: (sessionId: string) => void;
   setActiveSession: (sessionId: string | null) => void;
   updateSessionStatus: (sessionId: string, status: ClaudeSessionStatus, error?: string) => void;
@@ -24,14 +25,17 @@ export const useClaudeStore = create<ClaudeStore>((set, get) => ({
   sessions: new Map(),
   activeSessionId: null,
 
-  createSession: (cwd: string, worktreeId?: string) => {
-    const id = crypto.randomUUID();
+  createSession: (cwd: string, worktreeId?: string, existingId?: string, model?: string) => {
+    const id = existingId || crypto.randomUUID();
     const session: ClaudeSession = {
       id,
       cwd,
       worktreeId,
-      status: 'starting',
+      model,
+      status: 'waiting',
       messages: [],
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
       createdAt: Date.now(),
     };
     set((state) => {
@@ -75,6 +79,8 @@ export const useClaudeStore = create<ClaudeStore>((set, get) => ({
         sessions.set(sessionId, {
           ...session,
           messages: [...session.messages, message],
+          totalInputTokens: session.totalInputTokens + (message.inputTokens || 0),
+          totalOutputTokens: session.totalOutputTokens + (message.outputTokens || 0),
         });
       }
       return { sessions };
@@ -111,6 +117,17 @@ export const useClaudeStore = create<ClaudeStore>((set, get) => ({
       const session = sessions.get(sessionId);
       if (session) {
         sessions.set(sessionId, { ...session, cost });
+      }
+      return { sessions };
+    });
+  },
+
+  setModel: (sessionId, model) => {
+    set((state) => {
+      const sessions = new Map(state.sessions);
+      const session = sessions.get(sessionId);
+      if (session) {
+        sessions.set(sessionId, { ...session, model });
       }
       return { sessions };
     });

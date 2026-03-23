@@ -39,10 +39,10 @@ export function GitStatus({ onOpenDiff }: GitStatusProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2 text-xs">
+    <div className="flex flex-col gap-2 text-sm">
       {/* Branch info */}
       <div className="flex items-center gap-2 px-1">
-        <GitBranch size={14} className="text-[var(--accent)]" />
+        <GitBranch size={18} className="text-[var(--accent)]" />
         <span className="font-medium">{branch || 'no branch'}</span>
         {(ahead > 0 || behind > 0) && (
           <span className="text-[var(--text-muted)]">
@@ -108,7 +108,7 @@ export function GitStatus({ onOpenDiff }: GitStatusProps) {
               className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-[var(--bg-surface)] rounded cursor-pointer"
               onClick={() => handleStageFile(path)}
             >
-              <FileText size={12} className="text-[var(--text-muted)]" />
+              <FileText size={16} className="text-[var(--text-muted)]" />
               <span className="truncate flex-1">{path}</span>
               <span style={{ color: 'var(--text-muted)' }}>?</span>
             </div>
@@ -136,10 +136,10 @@ function FileRow({
 }) {
   return (
     <div
-      className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-[var(--bg-surface)] rounded cursor-pointer group"
+      className="flex items-center gap-2 px-2 py-1 hover:bg-[var(--bg-surface)] rounded cursor-pointer group"
       onClick={onClick}
     >
-      <FileText size={12} style={{ color: statusColors[file.status] }} />
+      <FileText size={16} style={{ color: statusColors[file.status] }} />
       <span className="truncate flex-1">{file.path}</span>
       {onStage && (
         <span

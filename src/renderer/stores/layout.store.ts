@@ -15,6 +15,8 @@ interface LayoutStore {
   updateSplitSizes: (splitId: string, sizes: number[]) => void;
   setActivePane: (paneId: string) => void;
   restoreLayout: (layout: LayoutTree) => void;
+  /** Focus existing tab if found, otherwise add to pane */
+  focusOrAddTab: (paneId: string, tab: TabItem) => void;
 }
 
 function createPane(tab: TabItem): PaneLeaf {
@@ -63,6 +65,18 @@ function findPane(node: LayoutTree, paneId: string): PaneLeaf | null {
   }
   for (const child of node.children) {
     const found = findPane(child, paneId);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Find the pane containing a tab with the given ID */
+function findPaneByTabId(node: LayoutTree, tabId: string): PaneLeaf | null {
+  if (node.type === 'pane') {
+    return node.tabs.some((t) => t.id === tabId) ? node : null;
+  }
+  for (const child of node.children) {
+    const found = findPaneByTabId(child, tabId);
     if (found) return found;
   }
   return null;
@@ -117,11 +131,17 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
   addTab: (paneId, tab) => {
     set((state) => {
       if (!state.root) return state;
-      const root = updateNode(state.root, paneId, (pane) => ({
-        ...pane,
-        tabs: [...pane.tabs, tab],
-        activeTabId: tab.id,
-      }));
+      const root = updateNode(state.root, paneId, (pane) => {
+        // Prevent duplicate tab IDs — just focus existing
+        if (pane.tabs.some((t) => t.id === tab.id)) {
+          return { ...pane, activeTabId: tab.id };
+        }
+        return {
+          ...pane,
+          tabs: [...pane.tabs, tab],
+          activeTabId: tab.id,
+        };
+      });
       return { root: root || state.root };
     });
   },
@@ -129,8 +149,26 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
   removeTab: (paneId, tabId) => {
     set((state) => {
       if (!state.root) return state;
+
+      // Remove only the first occurrence of the tab
+      const removeFirst = (tabs: TabItem[]) => {
+        const idx = tabs.findIndex((t) => t.id === tabId);
+        if (idx === -1) return tabs;
+        return [...tabs.slice(0, idx), ...tabs.slice(idx + 1)];
+      };
+
+      // If this is the only pane, keep it even when empty
+      if (state.root.type === 'pane' && state.root.id === paneId) {
+        const tabs = removeFirst(state.root.tabs);
+        if (tabs.length === 0) {
+          return { root: { ...state.root, tabs: [], activeTabId: '' } };
+        }
+        const activeTabId = state.root.activeTabId === tabId ? tabs[tabs.length - 1].id : state.root.activeTabId;
+        return { root: { ...state.root, tabs, activeTabId } };
+      }
+
       const root = updateNode(state.root, paneId, (pane) => {
-        const tabs = pane.tabs.filter((t) => t.id !== tabId);
+        const tabs = removeFirst(pane.tabs);
         if (tabs.length === 0) return null;
         const activeTabId = pane.activeTabId === tabId ? tabs[tabs.length - 1].id : pane.activeTabId;
         return { ...pane, tabs, activeTabId };
@@ -189,7 +227,23 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
   },
 
   restoreLayout: (layout) => {
-    set({ root: layout });
+    set({ root: layout, initialized: true });
+  },
+
+  focusOrAddTab: (paneId, tab) => {
+    const state = get();
+    if (!state.root) return;
+
+    // Check if tab already exists somewhere in the layout
+    const existingPane = findPaneByTabId(state.root, tab.id);
+    if (existingPane) {
+      // Focus the existing tab
+      state.setActiveTab(existingPane.id, tab.id);
+      state.setActivePane(existingPane.id);
+    } else {
+      // Add new tab to the target pane
+      state.addTab(paneId, tab);
+    }
   },
 }));
 

@@ -2,40 +2,27 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { SerializeAddon } from '@xterm/addon-serialize';
 import { getApi } from '../lib/ipc';
+import { getSettings } from '../stores/settings.store';
 
-const TERM_OPTIONS = {
-  cursorBlink: true,
-  fontSize: 14,
-  fontWeight: '300' as const,
-  fontFamily: "'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', Menlo, Monaco, monospace",
-  theme: {
-    background: '#1e1e2e',
-    foreground: '#cdd6f4',
-    cursor: '#f5e0dc',
-    selectionBackground: '#45475a',
-    black: '#45475a',
-    red: '#f38ba8',
-    green: '#a6e3a1',
-    yellow: '#f9e2af',
-    blue: '#89b4fa',
-    magenta: '#f5c2e7',
-    cyan: '#94e2d5',
-    white: '#bac2de',
-    brightBlack: '#585b70',
-    brightRed: '#f38ba8',
-    brightGreen: '#a6e3a1',
-    brightYellow: '#f9e2af',
-    brightBlue: '#89b4fa',
-    brightMagenta: '#f5c2e7',
-    brightCyan: '#94e2d5',
-    brightWhite: '#a6adc8',
-  },
-};
+function getTermOptions() {
+  const s = getSettings();
+  return {
+    cursorBlink: s.terminal.cursorBlink,
+    fontSize: s.font.terminalSize,
+    fontWeight: s.font.terminalWeight as '300',
+    fontWeightBold: s.font.terminalBoldWeight as '500',
+    fontFamily: s.font.family,
+    scrollback: s.terminal.scrollback,
+    theme: s.terminal.theme,
+  };
+}
 
 interface CachedTerminal {
   term: Terminal;
   fitAddon: FitAddon;
+  serializeAddon: SerializeAddon;
   unsubData: () => void;
   unsubExit: () => void;
 }
@@ -63,9 +50,11 @@ export function useTerminal({ terminalId }: UseTerminalOptions) {
 
     if (!cached) {
       // First mount: create Terminal + wire IPC (PTY already created by terminal store)
-      const term = new Terminal(TERM_OPTIONS);
+      const term = new Terminal(getTermOptions());
       const fitAddon = new FitAddon();
+      const serializeAddon = new SerializeAddon();
       term.loadAddon(fitAddon);
+      term.loadAddon(serializeAddon);
       term.loadAddon(new WebLinksAddon());
 
       // Send user input to existing PTY
@@ -91,7 +80,7 @@ export function useTerminal({ terminalId }: UseTerminalOptions) {
         getApi().pty.resize({ id: terminalId, cols, rows });
       });
 
-      cached = { term, fitAddon, unsubData, unsubExit };
+      cached = { term, fitAddon, serializeAddon, unsubData, unsubExit };
       terminalCache.set(terminalId, cached);
 
       // Open into DOM for the first time
@@ -138,6 +127,25 @@ export function useTerminal({ terminalId }: UseTerminalOptions) {
   }, [terminalId]);
 
   return { containerRef, focus, fit };
+}
+
+/** Get serialized scrollback for persistence */
+export function getTerminalScrollback(terminalId: string): string {
+  const cached = terminalCache.get(terminalId);
+  if (!cached) return '';
+  try {
+    return cached.serializeAddon.serialize();
+  } catch {
+    return '';
+  }
+}
+
+/** Write serialized scrollback to restore visual state */
+export function writeTerminalScrollback(terminalId: string, scrollback: string): void {
+  const cached = terminalCache.get(terminalId);
+  if (cached && scrollback) {
+    cached.term.write(scrollback);
+  }
 }
 
 /** Call when a terminal is permanently closed (killed) */

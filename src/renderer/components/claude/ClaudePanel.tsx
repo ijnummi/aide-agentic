@@ -3,9 +3,17 @@ import { ClaudeChat } from './ClaudeChat';
 import { ClaudeInput } from './ClaudeInput';
 import { AgentStatusBadge } from './AgentStatusBadge';
 import { useClaudeStore } from '../../stores/claude.store';
+import { useGitStore } from '../../stores/git.store';
 import { useClaude } from '../../hooks/useClaude';
 import { TerminalPanel } from '../terminal/TerminalPanel';
 import { useState } from 'react';
+
+const MODELS = [
+  { id: 'claude-sonnet-4-5-20250514', label: 'Sonnet 4.5' },
+  { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
+  { id: 'claude-opus-4-6', label: 'Opus 4.6' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
+];
 
 interface ClaudePanelProps {
   sessionId: string;
@@ -15,6 +23,10 @@ interface ClaudePanelProps {
 
 export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
   const session = useClaudeStore((s) => s.sessions.get(sessionId));
+  const setModel = useClaudeStore((s) => s.setModel);
+  const gitBranch = useGitStore((s) => s.branch);
+  const gitStaged = useGitStore((s) => s.staged);
+  const gitUnstaged = useGitStore((s) => s.unstaged);
   const { sendMessage, stopSession } = useClaude();
   const [viewMode, setViewMode] = useState<'structured' | 'raw'>('structured');
 
@@ -37,15 +49,52 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header / Status Line */}
       <div className="flex items-center justify-between px-3 h-8 bg-[var(--bg-secondary)] border-b border-[var(--border)] text-xs">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <AgentStatusBadge status={session.status} />
-          {session.cost !== undefined && (
-            <span className="text-[var(--text-muted)]">
-              ${session.cost.toFixed(4)}
-            </span>
+          <select
+            className="bg-[var(--bg-surface)] text-[var(--text-primary)] text-xs rounded px-1.5 py-0.5 border border-[var(--border)] outline-none"
+            value={session.model || ''}
+            onChange={(e) => setModel(sessionId, e.target.value || '')}
+            disabled={session.status === 'running'}
+          >
+            <option value="">Default</option>
+            {MODELS.map((m) => (
+              <option key={m.id} value={m.id}>{m.label}</option>
+            ))}
+          </select>
+          <span className="text-[var(--text-muted)]">|</span>
+          {/* Path */}
+          <span className="text-[var(--text-secondary)]">
+            .../{session.cwd.split('/').pop()}
+          </span>
+          {/* Branch + diff stats */}
+          {gitBranch && (
+            <>
+              <span className="text-[var(--text-muted)]">|</span>
+              <span className="text-[var(--accent)]">⎇ {gitBranch}</span>
+              {(gitStaged.length > 0 || gitUnstaged.length > 0) && (
+                <span>
+                  <span className="text-[var(--text-muted)]">(</span>
+                  <span className="text-[var(--success)]">+{gitStaged.length}</span>
+                  <span className="text-[var(--text-muted)]">,</span>
+                  <span className="text-[var(--warning)]">~{gitUnstaged.length}</span>
+                  <span className="text-[var(--text-muted)]">)</span>
+                </span>
+              )}
+            </>
           )}
+          {/* Worktree indicator */}
+          {session.worktreeId && (
+            <>
+              <span className="text-[var(--text-muted)]">𖠰</span>
+              <span className="text-[var(--text-secondary)]">{session.worktreeId.split('/').pop()}</span>
+            </>
+          )}
+          {/* Context usage */}
+          <span className="text-[var(--text-muted)]">|</span>
+          <ContextPct used={session.totalInputTokens + session.totalOutputTokens} max={200_000} />
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -101,5 +150,20 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function ContextPct({ used, max }: { used: number; max: number }) {
+  const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
+  const color = pct < 50 ? 'var(--success)' : pct < 80 ? 'var(--warning)' : 'var(--error)';
+
+  return (
+    <span
+      style={{ color }}
+      className="font-medium"
+      title={`${used.toLocaleString()} / ${max.toLocaleString()} tokens`}
+    >
+      {pct.toFixed(1)}%
+    </span>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGitStore } from '../stores/git.store';
-
-const POLL_INTERVAL = 5000;
+import { getSettings } from '../stores/settings.store';
 
 export function useGit(cwd: string) {
   const setCwd = useGitStore((s) => s.setCwd);
@@ -17,7 +16,7 @@ export function useGit(cwd: string) {
 
     intervalRef.current = setInterval(() => {
       refresh();
-    }, POLL_INTERVAL);
+    }, getSettings().timing.gitPollInterval);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);

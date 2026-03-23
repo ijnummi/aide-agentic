@@ -34,6 +34,7 @@ import type {
   GitHubPRReviewRequest,
   GitHubPRCommentRequest,
 } from '../shared/types/github';
+import type { SessionState, SessionMeta } from '../shared/types/persistence';
 
 contextBridge.exposeInMainWorld('aide', {
   pty: {
@@ -137,6 +138,33 @@ contextBridge.exposeInMainWorld('aide', {
     },
     addComment(req: GitHubPRCommentRequest): Promise<void> {
       return ipcRenderer.invoke(IPC.GITHUB_PR_COMMENT, req);
+    },
+  },
+
+  session: {
+    save(state: SessionState): Promise<void> {
+      return ipcRenderer.invoke(IPC.SESSION_SAVE, state);
+    },
+    load(projectPath: string): Promise<SessionState | null> {
+      return ipcRenderer.invoke(IPC.SESSION_LOAD, projectPath);
+    },
+    list(): Promise<SessionMeta[]> {
+      return ipcRenderer.invoke(IPC.SESSION_LIST);
+    },
+  },
+
+  window: {
+    minimize(): Promise<void> {
+      return ipcRenderer.invoke('window:minimize');
+    },
+    maximize(): Promise<void> {
+      return ipcRenderer.invoke('window:maximize');
+    },
+    close(): Promise<void> {
+      return ipcRenderer.invoke('window:close');
+    },
+    isMaximized(): Promise<boolean> {
+      return ipcRenderer.invoke('window:isMaximized');
     },
   },
 
