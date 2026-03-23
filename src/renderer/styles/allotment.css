@@ -1,0 +1,9 @@
+/* Override allotment sash (splitter handle) styling */
+.sash-container .sash {
+  background-color: var(--border) !important;
+  transition: background-color 0.15s ease;
+}
+
+.sash-container .sash:hover {
+  background-color: var(--accent) !important;
+}

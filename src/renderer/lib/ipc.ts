@@ -1,0 +1,88 @@
+import type {
+  PtyCreateRequest,
+  PtyCreateResponse,
+  PtyWriteRequest,
+  PtyResizeRequest,
+  PtyKillRequest,
+  PtyDataEvent,
+  PtyExitEvent,
+} from '../../shared/types/terminal';
+import type { ShellInfo } from '../../shared/types/ipc';
+import type {
+  ClaudeStartRequest,
+  ClaudeStopRequest,
+  ClaudeStreamEvent,
+  ClaudeStatusEvent,
+} from '../../shared/types/claude';
+import type {
+  GitStatusResponse,
+  GitLogEntry,
+  GitDiffRequest,
+} from '../../shared/types/git';
+import type {
+  WorktreeInfo,
+  WorktreeAddRequest,
+  WorktreeRemoveRequest,
+} from '../../shared/types/worktree';
+import type {
+  PullRequest,
+  PRDetail,
+  GitHubPRsRequest,
+  GitHubPRDetailRequest,
+  GitHubPRReviewRequest,
+  GitHubPRCommentRequest,
+} from '../../shared/types/github';
+
+export interface AideAPI {
+  pty: {
+    create(req: PtyCreateRequest): Promise<PtyCreateResponse>;
+    write(req: PtyWriteRequest): Promise<void>;
+    resize(req: PtyResizeRequest): Promise<void>;
+    kill(req: PtyKillRequest): Promise<void>;
+    onData(callback: (event: PtyDataEvent) => void): () => void;
+    onExit(callback: (event: PtyExitEvent) => void): () => void;
+  };
+  claude: {
+    start(req: ClaudeStartRequest): Promise<void>;
+    stop(req: ClaudeStopRequest): Promise<void>;
+    onEvent(callback: (event: ClaudeStreamEvent) => void): () => void;
+    onStatus(callback: (event: ClaudeStatusEvent) => void): () => void;
+  };
+  git: {
+    status(cwd: string): Promise<GitStatusResponse>;
+    diff(req: GitDiffRequest): Promise<string>;
+    log(cwd: string, count?: number): Promise<GitLogEntry[]>;
+    stage(cwd: string, files: string[]): Promise<void>;
+    commit(cwd: string, message: string): Promise<void>;
+    branches(cwd: string): Promise<string[]>;
+    checkout(cwd: string, branch: string): Promise<void>;
+  };
+  worktree: {
+    list(cwd: string): Promise<WorktreeInfo[]>;
+    add(req: WorktreeAddRequest): Promise<WorktreeInfo>;
+    remove(req: WorktreeRemoveRequest): Promise<void>;
+    prune(cwd: string): Promise<void>;
+  };
+  github: {
+    authenticate(token: string): Promise<{ ok: boolean }>;
+    listPRs(req: GitHubPRsRequest): Promise<PullRequest[]>;
+    getPRDetail(req: GitHubPRDetailRequest): Promise<PRDetail>;
+    getPRDiff(cwd: string, number: number): Promise<string>;
+    submitReview(req: GitHubPRReviewRequest): Promise<void>;
+    addComment(req: GitHubPRCommentRequest): Promise<void>;
+  };
+  shell: {
+    info(): Promise<ShellInfo>;
+    openExternal(url: string): Promise<void>;
+  };
+}
+
+declare global {
+  interface Window {
+    aide: AideAPI;
+  }
+}
+
+export function getApi(): AideAPI {
+  return window.aide;
+}
