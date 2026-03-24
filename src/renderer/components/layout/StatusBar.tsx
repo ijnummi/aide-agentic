@@ -1,6 +1,7 @@
 import { Terminal, GitBranch } from 'lucide-react';
 import { useTerminalStore } from '../../stores/terminal.store';
 import { useGitStore } from '../../stores/git.store';
+import { switchWorkspace } from '../../lib/workspace';
 import { WorktreeSelector } from '../worktree/WorktreeSelector';
 
 export function StatusBar() {
@@ -27,7 +28,7 @@ export function StatusBar() {
         <Terminal size={12} />
         <span>{terminalCount}</span>
       </div>
-      <WorktreeSelector />
+      <WorktreeSelector onSelect={switchWorkspace} />
       <div className="flex-1" />
       <span>AIDE v0.1.0</span>
     </div>

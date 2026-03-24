@@ -3,20 +3,23 @@ import { useLayoutStore } from '../../stores/layout.store';
 import { useClaudeStore } from '../../stores/claude.store';
 import { useGitStore } from '../../stores/git.store';
 import { useClaude } from '../../hooks/useClaude';
+import { claudeName, formatTabTitle, diffName, prName } from '../../lib/names';
 import { SessionList } from '../claude/SessionList';
 import { GitStatus } from '../git/GitStatus';
 import { BranchSelector } from '../git/BranchSelector';
 import { CommitPanel } from '../git/CommitPanel';
 import { TerminalList } from '../terminal/TerminalList';
 import { WorktreeList } from '../worktree/WorktreeList';
+import { HomePanel } from './HomePanel';
 import { PRList } from '../review/PRList';
 import { useGitHubStore } from '../../stores/github.store';
-import { getApi } from '../../lib/ipc';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useWorkspaceStore } from '../../stores/workspace.store';
 import type { TabItem } from '../../../shared/types/layout';
 import type { DiffFile } from '../../../shared/types/git';
 
 const panelTitles: Record<string, string> = {
+  home: 'Home',
   terminals: 'Terminals',
   'claude-sessions': 'Claude Sessions',
   git: 'Git',
@@ -33,18 +36,15 @@ export function Sidebar() {
   const setActiveSession = useClaudeStore((s) => s.setActiveSession);
   const getDiff = useGitStore((s) => s.getDiff);
   const { startSession } = useClaude();
-  const [cwd, setCwd] = useState('');
-
-  useEffect(() => {
-    getApi().shell.info().then((info) => setCwd(info.cwd));
-  }, []);
+  const cwd = useWorkspaceStore((s) => s.projectPath);
 
   const handleSelectSession = (sessionId: string) => {
     setActiveSession(sessionId);
+    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: 'Claude',
+      title: formatTabTitle(cn.name, cn.number),
       metadata: { sessionId },
     };
     focusOrAddTab(activePaneId, tab);
@@ -53,10 +53,11 @@ export function Sidebar() {
   const handleNewSession = () => {
     if (!cwd) return;
     const sessionId = startSession(cwd);
+    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: 'Claude',
+      title: formatTabTitle(cn.name, cn.number),
       metadata: { sessionId },
     };
     addTab(activePaneId, tab);
@@ -68,7 +69,7 @@ export function Sidebar() {
       const tab: TabItem = {
         id: `diff-${file}-${staged ? 'staged' : 'unstaged'}`,
         type: 'diff',
-        title: file.split('/').pop() || file,
+        title: diffName(file),
         metadata: { file, staged, diffFiles: files },
       };
       addTab(activePaneId, tab);
@@ -84,7 +85,10 @@ export function Sidebar() {
       <div className="flex items-center h-10 px-3 text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">
         {panelTitles[activeSidebarPanel] || activeSidebarPanel}
       </div>
-      <div className="flex-1 overflow-y-auto text-sm">
+      <div className="flex-1 overflow-y-auto text-sm" style={{ paddingLeft: 4 }}>
+        {activeSidebarPanel === 'home' && cwd && (
+          <HomePanel cwd={cwd} />
+        )}
         {activeSidebarPanel === 'terminals' && cwd && (
           <div className="p-1">
             <TerminalList cwd={cwd} />
@@ -115,14 +119,14 @@ export function Sidebar() {
               const tab: TabItem = {
                 id: `pr-${pr.number}`,
                 type: 'pr',
-                title: `PR #${pr.number}`,
+                title: prName(pr.number),
                 metadata: { prNumber: pr.number },
               };
               addTab(activePaneId, tab);
             }}
           />
         )}
-        {!['terminals', 'claude-sessions', 'git', 'worktrees', 'github'].includes(activeSidebarPanel) && (
+        {!['home', 'terminals', 'claude-sessions', 'git', 'worktrees', 'github'].includes(activeSidebarPanel) && (
           <div className="p-2 text-[var(--text-muted)] text-xs">
             {activeSidebarPanel} panel content coming soon
           </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GitFork, ChevronDown } from 'lucide-react';
 import { useWorktreeStore } from '../../stores/worktree.store';
+import { useWorkspaceStore } from '../../stores/workspace.store';
 
 interface WorktreeSelectorProps {
   onSelect?: (path: string) => void;
@@ -8,11 +9,12 @@ interface WorktreeSelectorProps {
 
 export function WorktreeSelector({ onSelect }: WorktreeSelectorProps) {
   const worktrees = useWorktreeStore((s) => s.worktrees);
+  const currentPath = useWorkspaceStore((s) => s.projectPath);
   const [open, setOpen] = useState(false);
 
   if (worktrees.length <= 1) return null;
 
-  const main = worktrees.find((w) => w.isMain);
+  const current = worktrees.find((w) => w.path === currentPath);
 
   return (
     <div className="relative">
@@ -21,7 +23,7 @@ export function WorktreeSelector({ onSelect }: WorktreeSelectorProps) {
         onClick={() => setOpen(!open)}
       >
         <GitFork size={12} />
-        <span>{worktrees.length} worktrees</span>
+        <span>{current?.path.split('/').pop() ?? `${worktrees.length} worktrees`}</span>
         <ChevronDown size={10} />
       </button>
 
@@ -32,7 +34,7 @@ export function WorktreeSelector({ onSelect }: WorktreeSelectorProps) {
             {worktrees.map((wt) => (
               <button
                 key={wt.path}
-                className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-[var(--bg-overlay)] text-[var(--text-primary)]"
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-[var(--bg-overlay)] ${wt.path === currentPath ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}
                 onClick={() => {
                   setOpen(false);
                   onSelect?.(wt.path);

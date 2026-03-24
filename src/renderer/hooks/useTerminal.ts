@@ -57,6 +57,36 @@ export function useTerminal({ terminalId }: UseTerminalOptions) {
       term.loadAddon(serializeAddon);
       term.loadAddon(new WebLinksAddon());
 
+      // Let app-level shortcuts pass through instead of being consumed by xterm
+      term.attachCustomKeyEventHandler((e) => {
+        if (e.type !== 'keydown') return true;
+        // Ctrl+P — quick switcher
+        if (e.ctrlKey && !e.shiftKey && e.key === 'p') return false;
+        // Ctrl+Shift+P — command palette
+        if (e.ctrlKey && e.shiftKey && e.key === 'P') return false;
+        // Ctrl+B — toggle sidebar
+        if (e.ctrlKey && !e.shiftKey && e.key === 'b') return false;
+        // Ctrl+S — save session
+        if (e.ctrlKey && !e.shiftKey && e.key === 's') return false;
+        // Ctrl+T — new terminal
+        if (e.ctrlKey && !e.shiftKey && e.key === 't') return false;
+        // Ctrl+Shift+C — new Claude session
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') return false;
+        // Ctrl+Tab / Ctrl+Shift+Tab — tab switcher
+        if (e.ctrlKey && e.key === 'Tab') return false;
+        // Alt+Arrow — pane/tab navigation
+        if (e.altKey && !e.ctrlKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return false;
+        // Alt+1-0 — focus tab by number
+        if (e.altKey && !e.ctrlKey && e.key >= '0' && e.key <= '9') return false;
+        // Ctrl+\ / Ctrl+Shift+\ — split pane
+        if (e.ctrlKey && e.code === 'Backslash') return false;
+        // Ctrl+Shift+Left/Right — switch worktree
+        if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return false;
+        // Ctrl+Shift+Alt+Arrow — split in direction
+        if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) return false;
+        return true;
+      });
+
       // Send user input to existing PTY
       term.onData((data) => {
         getApi().pty.write({ id: terminalId, data });
@@ -157,4 +187,25 @@ export function disposeTerminal(terminalId: string) {
     cached.term.dispose();
     terminalCache.delete(terminalId);
   }
+}
+
+/**
+ * Register a global listener that auto-closes tabs when PTY exits.
+ * Call once at app startup.
+ */
+let exitListenerRegistered = false;
+
+export function registerTerminalExitListener(
+  findAndRemoveTab: (terminalId: string) => void,
+) {
+  if (exitListenerRegistered) return;
+  exitListenerRegistered = true;
+
+  getApi().pty.onExit((event) => {
+    // Small delay so the exit message is visible briefly
+    setTimeout(() => {
+      disposeTerminal(event.id);
+      findAndRemoveTab(event.id);
+    }, 300);
+  });
 }

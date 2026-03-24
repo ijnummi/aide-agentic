@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { TerminalInstance } from '../../shared/types/terminal';
 import { getApi } from '../lib/ipc';
+import { terminalName, formatTabTitle } from '../lib/names';
 
 interface TerminalStore {
   terminals: Map<string, TerminalInstance>;
@@ -23,12 +24,18 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     const actualShell = (shell && shell !== 'default') ? shell : undefined;
     const response = await getApi().pty.create({ id, cwd, shell: actualShell, cols, rows });
 
+    // Ensure terminal is in the correct directory after shell init
+    setTimeout(() => {
+      const quoted = cwd.includes("'") ? `"${cwd}"` : `'${cwd}'`;
+      getApi().pty.write({ id, data: `cd ${quoted} && clear\r` });
+    }, 150);
+
     const terminal: TerminalInstance = {
       id,
       pid: response.pid,
       cwd,
       shell: actualShell || 'default',
-      title: `Terminal ${get().terminals.size + 1}`,
+      title: (() => { const n = terminalName(); return formatTabTitle(n.name, n.number); })(),
       status: 'running',
       createdAt: Date.now(),
     };

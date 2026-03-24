@@ -2,16 +2,18 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { TitleBar } from './components/layout/TitleBar';
 import { CommandPalette, type Command } from './components/shared/CommandPalette';
+import { QuickSwitcher } from './components/shared/QuickSwitcher';
 import { ToastContainer } from './components/shared/Toast';
+import { claudeName, formatTabTitle } from './lib/names';
 import { TabSwitcher } from './components/shared/TabSwitcher';
 import { ShortcutOverlay } from './components/shared/ShortcutOverlay';
 import { useUIStore } from './stores/ui.store';
 import { useSettingsStore } from './stores/settings.store';
 import { useTerminalStore } from './stores/terminal.store';
 import { useLayoutStore } from './stores/layout.store';
+import { useWorkspaceStore } from './stores/workspace.store';
 import { useClaude } from './hooks/useClaude';
 import { usePersistence } from './hooks/usePersistence';
-import { getApi } from './lib/ipc';
 import type { TabItem } from '../shared/types/layout';
 
 export function App() {
@@ -26,8 +28,9 @@ export function App() {
   const { save } = usePersistence();
   const settings = useSettingsStore((s) => s.settings);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [cwd, setCwd] = useState('');
+  const cwd = useWorkspaceStore((s) => s.projectPath);
 
   // Apply theme + font settings to document
   useEffect(() => {
@@ -36,16 +39,17 @@ export function App() {
     document.documentElement.style.setProperty('font-family', settings.font.family);
   }, [theme, settings.font.uiSize, settings.font.family]);
 
-  useEffect(() => {
-    getApi().shell.info().then((info) => setCwd(info.cwd));
-  }, []);
-
-  // Ctrl+Shift+P — command palette, ? — shortcut overlay
+  // Ctrl+Shift+P — command palette, Ctrl+P — quick switcher, ? — shortcut overlay
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'P') {
         e.preventDefault();
         setPaletteOpen((o) => !o);
+        return;
+      }
+      if (e.ctrlKey && !e.shiftKey && e.key === 'p') {
+        e.preventDefault();
+        setSwitcherOpen((o) => !o);
         return;
       }
       // ? — only when not in terminal or input
@@ -78,10 +82,11 @@ export function App() {
   const handleNewClaude = useCallback(() => {
     if (!cwd) return;
     const sessionId = startSession(cwd);
+    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: 'Claude',
+      title: formatTabTitle(cn.name, cn.number),
       metadata: { sessionId },
     };
     addTab(activePaneId, tab);
@@ -117,6 +122,11 @@ export function App() {
         label: 'Save Session',
         shortcut: 'Ctrl+S',
         action: save,
+      },
+      {
+        id: 'show-home',
+        label: 'Show: Home',
+        action: () => setSidebarPanel('home'),
       },
       {
         id: 'show-terminals',
@@ -159,6 +169,7 @@ export function App() {
         <AppShell />
       </div>
       <CommandPalette commands={commands} open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <QuickSwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <ShortcutOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <TabSwitcher />
       <ToastContainer />
