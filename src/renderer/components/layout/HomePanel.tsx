@@ -9,7 +9,7 @@ import { useLayoutStore } from '../../stores/layout.store';
 import { useClaude } from '../../hooks/useClaude';
 import { getApi } from '../../lib/ipc';
 import { switchWorkspace } from '../../lib/workspace';
-import { terminalName, claudeName, formatTabTitle } from '../../lib/names';
+import { claudeName } from '../../lib/names';
 import type { TabItem } from '../../../shared/types/layout';
 import { useEffect, useState } from 'react';
 
@@ -35,14 +35,12 @@ export function HomePanel({ cwd }: HomePanelProps) {
   const activePaneId = useLayoutStore((s) => s.activePaneId);
   const { startSession } = useClaude();
 
-  const terminalList = Array.from(terminals.values());
-  const claudeList = Array.from(claudeSessions.values());
+  const terminalList = Array.from(terminals.values()).filter((t) => t.cwd === projectPath);
+  const claudeList = Array.from(claudeSessions.values()).filter((s) => s.cwd === projectPath);
   const totalChanges = gitStaged.length + gitUnstaged.length + gitUntracked.length;
 
   const handleNewTerminal = async () => {
     const id = await createTerminal(cwd);
-    const n = terminalName();
-    // Counter already incremented by createTerminal, get title from store
     const tab: TabItem = {
       id,
       type: 'terminal',
@@ -54,11 +52,10 @@ export function HomePanel({ cwd }: HomePanelProps) {
 
   const handleNewClaude = () => {
     const sessionId = startSession(cwd);
-    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: formatTabTitle(cn.name, cn.number),
+      title: claudeName(),
       metadata: { sessionId },
     };
     addTab(activePaneId, tab);

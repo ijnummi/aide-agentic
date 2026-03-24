@@ -3,7 +3,7 @@ import { useLayoutStore } from '../../stores/layout.store';
 import { useClaudeStore } from '../../stores/claude.store';
 import { useGitStore } from '../../stores/git.store';
 import { useClaude } from '../../hooks/useClaude';
-import { claudeName, formatTabTitle, diffName, prName } from '../../lib/names';
+import { claudeName, diffName, prName } from '../../lib/names';
 import { SessionList } from '../claude/SessionList';
 import { GitStatus } from '../git/GitStatus';
 import { BranchSelector } from '../git/BranchSelector';
@@ -40,11 +40,10 @@ export function Sidebar() {
 
   const handleSelectSession = (sessionId: string) => {
     setActiveSession(sessionId);
-    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: formatTabTitle(cn.name, cn.number),
+      title: claudeName(),
       metadata: { sessionId },
     };
     focusOrAddTab(activePaneId, tab);
@@ -53,11 +52,10 @@ export function Sidebar() {
   const handleNewSession = () => {
     if (!cwd) return;
     const sessionId = startSession(cwd);
-    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: formatTabTitle(cn.name, cn.number),
+      title: claudeName(),
       metadata: { sessionId },
     };
     addTab(activePaneId, tab);

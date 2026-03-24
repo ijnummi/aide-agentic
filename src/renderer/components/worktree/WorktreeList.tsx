@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useWorktreeStore } from '../../stores/worktree.store';
-import { useClaudeStore } from '../../stores/claude.store';
-import { useClaude } from '../../hooks/useClaude';
 import { WorktreeCard } from './WorktreeCard';
 import { CreateWorktreeDialog } from './CreateWorktreeDialog';
 import { IconButton } from '../shared/IconButton';
 
 export function WorktreeList() {
-  const { worktrees, isLoading, refresh, remove, assignAgent } = useWorktreeStore();
-  const { startSession } = useClaude();
+  const { worktrees, isLoading, refresh, remove } = useWorktreeStore();
   const [showCreate, setShowCreate] = useState(false);
 
   const handleRemove = async (path: string) => {
@@ -18,11 +15,6 @@ export function WorktreeList() {
     } catch {
       // Could show error toast
     }
-  };
-
-  const handleAssignAgent = (worktreePath: string) => {
-    const sessionId = startSession(worktreePath);
-    assignAgent(worktreePath, sessionId);
   };
 
   return (
@@ -53,7 +45,6 @@ export function WorktreeList() {
           key={wt.path}
           worktree={wt}
           onRemove={() => handleRemove(wt.path)}
-          onAssignAgent={() => handleAssignAgent(wt.path)}
         />
       ))}
 

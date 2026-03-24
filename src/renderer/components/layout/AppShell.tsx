@@ -14,15 +14,14 @@ import { useKeyboard } from '../../hooks/useKeyboard';
 import { useWorkspaceStore } from '../../stores/workspace.store';
 import { registerTerminalExitListener } from '../../hooks/useTerminal';
 import { getApi } from '../../lib/ipc';
-import { claudeName, formatTabTitle } from '../../lib/names';
+import { claudeName } from '../../lib/names';
+import { ensurePrimaryClaudeTab, bootstrapFresh } from '../../lib/workspace';
 import type { TabItem } from '../../../shared/types/layout';
 
 export function AppShell() {
   const root = useLayoutStore((s) => s.root);
-  const initializeWithTerminal = useLayoutStore((s) => s.initializeWithTerminal);
   const addTab = useLayoutStore((s) => s.addTab);
   const activePaneId = useLayoutStore((s) => s.activePaneId);
-  const createTerminal = useTerminalStore((s) => s.createTerminal);
   const sidebarVisible = useUIStore((s) => s.sidebarVisible);
   const { startSession } = useClaude();
   const removeTabById = useLayoutStore((s) => s.removeTabById);
@@ -44,11 +43,10 @@ export function AppShell() {
   const handleNewClaudeSession = useCallback(() => {
     if (!cwd) return;
     const sessionId = startSession(cwd);
-    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: formatTabTitle(cn.name, cn.number),
+      title: claudeName(),
       metadata: { sessionId },
     };
     addTab(activePaneId, tab);
@@ -62,19 +60,19 @@ export function AppShell() {
       .then((info) => setProjectPath(info.cwd));
   }, [setProjectPath]);
 
-  // Bootstrap: try to restore session, else create first terminal
+  // Bootstrap: try to restore session, else create [Claude, Terminal]
   useEffect(() => {
     if (!cwd || bootstrapRef.current) return;
     bootstrapRef.current = true;
 
     restore(cwd).then((restored) => {
-      if (!restored) {
-        createTerminal(cwd).then((terminalId) => {
-          initializeWithTerminal(terminalId);
-        });
+      if (restored) {
+        ensurePrimaryClaudeTab(cwd);
+      } else {
+        bootstrapFresh(cwd);
       }
     });
-  }, [cwd, createTerminal, initializeWithTerminal, restore, setProjectPath]);
+  }, [cwd, restore]);
 
   if (!cwd || !root) {
     return (

@@ -10,7 +10,7 @@ interface TabBarProps {
   trailing?: React.ReactNode;
 }
 
-const tabIcons: Record<TabType, React.ComponentType<{ size?: number }>> = {
+const tabIcons: Record<TabType, React.ComponentType<{ size?: number; className?: string }>> = {
   terminal: Terminal,
   claude: Bot,
   diff: GitCompare,
@@ -23,31 +23,46 @@ export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onNewTermin
   return (
     <div className="flex items-center h-9 bg-[var(--bg-secondary)] border-b border-[var(--border)] select-none">
       <div className="flex flex-1 overflow-x-auto">
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const Icon = tabIcons[tab.type] || Terminal;
           const isActive = tab.id === activeTabId;
+          const posNumber = index + 1;
+          const isPrimary = tab.metadata?.isPrimary === true;
 
           return (
             <button
               key={tab.id}
-              className={`flex items-center gap-1.5 px-3 h-9 text-xs border-r border-[var(--border)] whitespace-nowrap transition-colors ${
+              style={{ paddingLeft: 6, paddingRight: 6 }}
+              className={`flex items-center gap-1.5 h-9 text-xs border-r border-[var(--border)] whitespace-nowrap transition-colors ${
                 isActive
                   ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] border-b-2 border-b-[var(--accent)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'
               }`}
               onClick={() => onSelectTab(tab.id)}
+              title={posNumber <= 10 ? `Alt+${posNumber % 10}` : undefined}
             >
-              <Icon size={14} />
+              <Icon size={14} className={isActive ? 'text-[var(--accent)]' : ''} />
               <span>{tab.title}</span>
-              <span
-                className="ml-1 rounded hover:bg-[var(--bg-overlay)] p-0.5"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCloseTab(tab.id);
-                }}
-              >
-                <X size={12} />
-              </span>
+              {posNumber <= 10 && (
+                <span className={`min-w-[18px] h-[16px] flex items-center justify-center rounded-sm text-[10px] font-mono leading-none ${
+                  isActive
+                    ? 'bg-[var(--accent)] text-[var(--bg-primary)]'
+                    : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
+                }`}>
+                  {posNumber % 10}
+                </span>
+              )}
+              {!isPrimary && (
+                <span
+                  className="ml-0.5 rounded hover:bg-[var(--bg-overlay)] p-0.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCloseTab(tab.id);
+                  }}
+                >
+                  <X size={12} />
+                </span>
+              )}
             </button>
           );
         })}

@@ -1,5 +1,6 @@
 import { Bot, Plus, X } from 'lucide-react';
 import { useClaudeStore } from '../../stores/claude.store';
+import { useWorkspaceStore } from '../../stores/workspace.store';
 import { AgentStatusBadge } from './AgentStatusBadge';
 
 interface SessionListProps {
@@ -11,10 +12,11 @@ export function SessionList({ onSelectSession, onNewSession }: SessionListProps)
   const sessions = useClaudeStore((s) => s.sessions);
   const activeSessionId = useClaudeStore((s) => s.activeSessionId);
   const removeSession = useClaudeStore((s) => s.removeSession);
+  const currentPath = useWorkspaceStore((s) => s.projectPath);
 
-  const sessionList = Array.from(sessions.values()).sort(
-    (a, b) => b.createdAt - a.createdAt,
-  );
+  const sessionList = Array.from(sessions.values())
+    .filter((s) => s.cwd === currentPath)
+    .sort((a, b) => b.createdAt - a.createdAt);
 
   return (
     <div className="flex flex-col h-full">

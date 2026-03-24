@@ -11,8 +11,6 @@ interface WorktreeStore {
   refresh: () => Promise<void>;
   add: (path: string, branch: string, createBranch?: boolean) => Promise<WorktreeInfo>;
   remove: (path: string, force?: boolean) => Promise<void>;
-  assignAgent: (worktreePath: string, agentId: string) => void;
-  unassignAgent: (worktreePath: string) => void;
 }
 
 export const useWorktreeStore = create<WorktreeStore>((set, get) => ({
@@ -28,13 +26,7 @@ export const useWorktreeStore = create<WorktreeStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const worktrees = await getApi().worktree.list(cwd);
-      // Preserve agent assignments
-      const existing = get().worktrees;
-      const merged = worktrees.map((wt) => {
-        const prev = existing.find((e) => e.path === wt.path);
-        return prev?.assignedAgentId ? { ...wt, assignedAgentId: prev.assignedAgentId } : wt;
-      });
-      set({ worktrees: merged });
+      set({ worktrees });
     } catch {
       // Not a git repo
     } finally {
@@ -53,21 +45,5 @@ export const useWorktreeStore = create<WorktreeStore>((set, get) => ({
     const { cwd } = get();
     await getApi().worktree.remove({ cwd, path, force });
     await get().refresh();
-  },
-
-  assignAgent: (worktreePath, agentId) => {
-    set((state) => ({
-      worktrees: state.worktrees.map((wt) =>
-        wt.path === worktreePath ? { ...wt, assignedAgentId: agentId } : wt,
-      ),
-    }));
-  },
-
-  unassignAgent: (worktreePath) => {
-    set((state) => ({
-      worktrees: state.worktrees.map((wt) =>
-        wt.path === worktreePath ? { ...wt, assignedAgentId: undefined } : wt,
-      ),
-    }));
   },
 }));

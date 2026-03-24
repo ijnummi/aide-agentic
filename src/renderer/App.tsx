@@ -4,7 +4,7 @@ import { TitleBar } from './components/layout/TitleBar';
 import { CommandPalette, type Command } from './components/shared/CommandPalette';
 import { QuickSwitcher } from './components/shared/QuickSwitcher';
 import { ToastContainer } from './components/shared/Toast';
-import { claudeName, formatTabTitle } from './lib/names';
+import { claudeName } from './lib/names';
 import { TabSwitcher } from './components/shared/TabSwitcher';
 import { ShortcutOverlay } from './components/shared/ShortcutOverlay';
 import { useUIStore } from './stores/ui.store';
@@ -82,11 +82,10 @@ export function App() {
   const handleNewClaude = useCallback(() => {
     if (!cwd) return;
     const sessionId = startSession(cwd);
-    const cn = claudeName();
     const tab: TabItem = {
       id: sessionId,
       type: 'claude',
-      title: formatTabTitle(cn.name, cn.number),
+      title: claudeName(),
       metadata: { sessionId },
     };
     addTab(activePaneId, tab);

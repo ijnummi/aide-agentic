@@ -1,14 +1,13 @@
-import { GitFork, Trash2, Bot } from 'lucide-react';
+import { GitFork, Trash2 } from 'lucide-react';
 import type { WorktreeInfo } from '../../../shared/types/worktree';
 import { IconButton } from '../shared/IconButton';
 
 interface WorktreeCardProps {
   worktree: WorktreeInfo;
   onRemove: () => void;
-  onAssignAgent: () => void;
 }
 
-export function WorktreeCard({ worktree, onRemove, onAssignAgent }: WorktreeCardProps) {
+export function WorktreeCard({ worktree, onRemove }: WorktreeCardProps) {
   const dirName = worktree.path.split('/').pop() || worktree.path;
 
   return (
@@ -21,13 +20,7 @@ export function WorktreeCard({ worktree, onRemove, onAssignAgent }: WorktreeCard
           {worktree.head && ` · ${worktree.head.slice(0, 7)}`}
         </div>
       </div>
-      {worktree.assignedAgentId && (
-        <span title="Agent assigned"><Bot size={16} className="text-[var(--accent)] flex-shrink-0" /></span>
-      )}
       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
-        {!worktree.assignedAgentId && (
-          <IconButton icon={Bot} size={12} title="Assign Claude agent" onClick={onAssignAgent} />
-        )}
         {!worktree.isMain && (
           <IconButton icon={Trash2} size={12} title="Remove worktree" onClick={onRemove} />
         )}

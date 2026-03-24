@@ -39,9 +39,11 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
 
   const handleCloseTab = useCallback(
     (tabId: string) => {
+      const tab = pane.tabs.find((t) => t.id === tabId);
+      if (tab?.metadata?.isPrimary) return;
       removeTab(pane.id, tabId);
     },
-    [pane.id, removeTab],
+    [pane.id, pane.tabs, removeTab],
   );
 
   const handleSelectTab = useCallback(

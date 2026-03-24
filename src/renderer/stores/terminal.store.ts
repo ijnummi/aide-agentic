@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { TerminalInstance } from '../../shared/types/terminal';
 import { getApi } from '../lib/ipc';
-import { terminalName, formatTabTitle } from '../lib/names';
+import { terminalName } from '../lib/names';
 
 interface TerminalStore {
   terminals: Map<string, TerminalInstance>;
@@ -35,7 +35,7 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
       pid: response.pid,
       cwd,
       shell: actualShell || 'default',
-      title: (() => { const n = terminalName(); return formatTabTitle(n.name, n.number); })(),
+      title: terminalName(),
       status: 'running',
       createdAt: Date.now(),
     };

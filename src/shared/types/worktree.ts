@@ -4,7 +4,6 @@ export interface WorktreeInfo {
   head: string;
   isMain: boolean;
   bare?: boolean;
-  assignedAgentId?: string;
 }
 
 export interface WorktreeAddRequest {

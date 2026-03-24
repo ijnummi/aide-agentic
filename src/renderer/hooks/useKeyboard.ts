@@ -78,21 +78,10 @@ function findAdjacentPane(root: LayoutTree, paneId: string, direction: Direction
   return search(root);
 }
 
-function findTabByNumber(node: LayoutTree, num: number): { paneId: string; tabId: string } | null {
-  const pattern = `(${num})`;
-  if (node.type === 'pane') {
-    for (const tab of node.tabs) {
-      if (tab.title.endsWith(pattern)) {
-        return { paneId: node.id, tabId: tab.id };
-      }
-    }
-    return null;
-  }
-  for (const child of node.children) {
-    const found = findTabByNumber(child, num);
-    if (found) return found;
-  }
-  return null;
+/** Find the Nth tab (1-based) in the given pane */
+function tabAtIndex(pane: PaneLeaf, num: number): string | null {
+  const index = num - 1;
+  return index >= 0 && index < pane.tabs.length ? pane.tabs[index].id : null;
 }
 
 interface UseKeyboardOptions {
@@ -199,18 +188,20 @@ export function useKeyboard({ cwd, onNewClaudeSession }: UseKeyboardOptions) {
         return;
       }
 
-      // Alt+1-0 — focus tab by number
+      // Alt+1-0 — focus tab by position in active pane
       if (e.altKey && !e.ctrlKey && !e.shiftKey && e.key >= '0' && e.key <= '9') {
         e.preventDefault();
         e.stopImmediatePropagation();
         const num = e.key === '0' ? 10 : parseInt(e.key, 10);
         const layoutState = useLayoutStore.getState();
         if (layoutState.root) {
-          const result = findTabByNumber(layoutState.root, num);
-          if (result) {
-            layoutState.setActiveTab(result.paneId, result.tabId);
-            layoutState.setActivePane(result.paneId);
-            getTerminalCache().get(result.tabId)?.term.focus();
+          const pane = findPaneById(layoutState.root, layoutState.activePaneId);
+          if (pane) {
+            const tabId = tabAtIndex(pane, num);
+            if (tabId) {
+              layoutState.setActiveTab(pane.id, tabId);
+              getTerminalCache().get(tabId)?.term.focus();
+            }
           }
         }
         return;

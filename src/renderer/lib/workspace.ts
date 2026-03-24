@@ -1,10 +1,11 @@
 import { getApi } from './ipc';
+import { PRIMARY_CLAUDE_TITLE } from './names';
 import { useWorkspaceStore } from '../stores/workspace.store';
 import { useLayoutStore } from '../stores/layout.store';
 import { useTerminalStore } from '../stores/terminal.store';
 import { useClaudeStore } from '../stores/claude.store';
 import { writeTerminalScrollback } from '../hooks/useTerminal';
-import type { LayoutTree, TabItem } from '../../shared/types/layout';
+import type { LayoutTree, PaneLeaf, TabItem } from '../../shared/types/layout';
 
 interface LayoutSnapshot {
   root: LayoutTree;
@@ -13,6 +14,43 @@ interface LayoutSnapshot {
 
 /** In-memory layout cache per worktree path (survives switches, not app restarts) */
 const layoutCache = new Map<string, LayoutSnapshot>();
+
+/** Find the first pane leaf in a layout tree */
+function firstPane(node: LayoutTree): PaneLeaf | null {
+  if (node.type === 'pane') return node;
+  for (const child of node.children) {
+    const found = firstPane(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Ensure the first pane has a primary Claude tab at index 0 */
+export function ensurePrimaryClaudeTab(cwd: string) {
+  const layoutStore = useLayoutStore.getState();
+  if (!layoutStore.root) return;
+
+  const pane = firstPane(layoutStore.root);
+  if (!pane) return;
+
+  // Already has a primary Claude tab at position 0
+  if (pane.tabs[0]?.metadata?.isPrimary === true) return;
+
+  // Check if a primary Claude tab exists elsewhere in this pane
+  const existing = pane.tabs.find((t) => t.metadata?.isPrimary === true);
+  if (existing) return; // exists but not at 0 — leave it (user reordered)
+
+  // Create a new primary Claude session and insert at index 0
+  const claudeStore = useClaudeStore.getState();
+  const sessionId = claudeStore.createSession(cwd);
+  const claudeTab: TabItem = {
+    id: sessionId,
+    type: 'claude',
+    title: PRIMARY_CLAUDE_TITLE,
+    metadata: { sessionId, isPrimary: true },
+  };
+  layoutStore.insertTabAt(pane.id, claudeTab, 0);
+}
 
 async function restoreFromDisk(path: string): Promise<boolean> {
   const saved = await getApi().session.load(path);
@@ -43,25 +81,41 @@ async function restoreFromDisk(path: string): Promise<boolean> {
 
   layoutStore.restoreLayout(saved.layout);
   if (saved.activePaneId) layoutStore.setActivePane(saved.activePaneId);
+
+  // Ensure primary Claude tab exists after restoring old sessions
+  ensurePrimaryClaudeTab(path);
+
   return true;
 }
 
-async function bootstrapFresh(cwd: string) {
+export async function bootstrapFresh(cwd: string) {
+  const claudeStore = useClaudeStore.getState();
   const terminalStore = useTerminalStore.getState();
   const layoutStore = useLayoutStore.getState();
 
+  // Primary Claude session (lazy — no CLI process until first message)
+  const sessionId = claudeStore.createSession(cwd);
+  const claudeTab: TabItem = {
+    id: sessionId,
+    type: 'claude',
+    title: PRIMARY_CLAUDE_TITLE,
+    metadata: { sessionId, isPrimary: true },
+  };
+
+  // Terminal
   const terminalId = await terminalStore.createTerminal(cwd);
-  const tab: TabItem = {
+  const terminalTab: TabItem = {
     id: terminalId,
     type: 'terminal',
     title: terminalStore.getTitle(terminalId),
     metadata: { terminalId },
   };
+
   layoutStore.restoreLayout({
     id: crypto.randomUUID(),
     type: 'pane',
-    activeTabId: tab.id,
-    tabs: [tab],
+    activeTabId: terminalTab.id, // Start in terminal, not idle Claude
+    tabs: [claudeTab, terminalTab],
   });
 }
 
@@ -87,7 +141,7 @@ export async function switchWorkspace(newPath: string) {
   // 2. Switch path
   useWorkspaceStore.getState().setProjectPath(newPath);
 
-  // 3. Restore: in-memory cache → disk → fresh terminal
+  // 3. Restore: in-memory cache → disk → fresh bootstrap
   const cached = layoutCache.get(newPath);
   if (cached) {
     layoutStore.restoreLayout(cached.root);

@@ -15,8 +15,12 @@ interface LayoutStore {
   updateSplitSizes: (splitId: string, sizes: number[]) => void;
   setActivePane: (paneId: string) => void;
   restoreLayout: (layout: LayoutTree) => void;
+  /** Remove a tab by ID from whichever pane contains it */
+  removeTabById: (tabId: string) => void;
   /** Focus existing tab if found, otherwise add to pane */
   focusOrAddTab: (paneId: string, tab: TabItem) => void;
+  /** Insert a tab at a specific index */
+  insertTabAt: (paneId: string, tab: TabItem, index: number) => void;
 }
 
 function createPane(tab: TabItem): PaneLeaf {
@@ -230,6 +234,15 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
     set({ root: layout, initialized: true });
   },
 
+  removeTabById: (tabId) => {
+    const state = get();
+    if (!state.root) return;
+    const pane = findPaneByTabId(state.root, tabId);
+    if (pane) {
+      state.removeTab(pane.id, tabId);
+    }
+  },
+
   focusOrAddTab: (paneId, tab) => {
     const state = get();
     if (!state.root) return;
@@ -244,6 +257,21 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
       // Add new tab to the target pane
       state.addTab(paneId, tab);
     }
+  },
+
+  insertTabAt: (paneId, tab, index) => {
+    set((state) => {
+      if (!state.root) return state;
+      const root = updateNode(state.root, paneId, (pane) => {
+        if (pane.tabs.some((t) => t.id === tab.id)) {
+          return { ...pane, activeTabId: tab.id };
+        }
+        const tabs = [...pane.tabs];
+        tabs.splice(index, 0, tab);
+        return { ...pane, tabs };
+      });
+      return { root: root || state.root };
+    });
   },
 }));
 

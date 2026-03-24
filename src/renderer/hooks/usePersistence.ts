@@ -4,7 +4,6 @@ import { useLayoutStore } from '../stores/layout.store';
 import { useTerminalStore } from '../stores/terminal.store';
 import { useClaudeStore } from '../stores/claude.store';
 import { useUIStore } from '../stores/ui.store';
-import { useWorktreeStore } from '../stores/worktree.store';
 import { useWorkspaceStore } from '../stores/workspace.store';
 import { getTerminalScrollback, writeTerminalScrollback } from './useTerminal';
 import { getSettings } from '../stores/settings.store';
@@ -24,8 +23,6 @@ export function usePersistence() {
     const terminalStore = useTerminalStore.getState();
     const claudeStore = useClaudeStore.getState();
     const ui = useUIStore.getState();
-    const worktreeStore = useWorktreeStore.getState();
-
     const terminals = Array.from(terminalStore.terminals.values()).map((t) => ({
       id: t.id,
       cwd: t.cwd,
@@ -44,13 +41,6 @@ export function usePersistence() {
       cost: s.cost,
     }));
 
-    const worktreeAssignments: Record<string, string> = {};
-    for (const wt of worktreeStore.worktrees) {
-      if (wt.assignedAgentId) {
-        worktreeAssignments[wt.path] = wt.assignedAgentId;
-      }
-    }
-
     return {
       version: 1,
       projectPath: workspace.projectPath,
@@ -65,7 +55,7 @@ export function usePersistence() {
         activeSidebarPanel: ui.activeSidebarPanel,
         theme: ui.theme,
       },
-      worktreeAssignments,
+      worktreeAssignments: {},
     };
   }, []);
 
