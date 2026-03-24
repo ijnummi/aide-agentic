@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { ClaudeChat } from './ClaudeChat';
-import { ClaudeInput } from './ClaudeInput';
+import { ClaudeInput, type ClaudeInputHandle } from './ClaudeInput';
 import { AgentStatusBadge } from './AgentStatusBadge';
 import { useClaudeStore } from '../../stores/claude.store';
+import { getSettings } from '../../stores/settings.store';
 import { useGitStore } from '../../stores/git.store';
 import { useClaude } from '../../hooks/useClaude';
 import { TerminalPanel } from '../terminal/TerminalPanel';
@@ -29,6 +30,32 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
   const gitUnstaged = useGitStore((s) => s.unstaged);
   const { sendMessage, stopSession } = useClaude();
   const [viewMode, setViewMode] = useState<'structured' | 'raw'>('structured');
+  const inputRef = useRef<ClaudeInputHandle>(null);
+
+  useEffect(() => {
+    if (isActive && viewMode === 'structured') {
+      inputRef.current?.focus();
+    }
+  }, [isActive, viewMode]);
+
+  // Refocus input after user clicks in chat area (e.g. to select/copy text)
+  useEffect(() => {
+    if (!isActive || viewMode !== 'structured') return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleMouseUp = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, getSettings().timing.claudeInputRefocusDelay);
+    };
+
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      if (timer) clearTimeout(timer);
+    };
+  }, [isActive, viewMode]);
 
   const handleSend = useCallback(
     (prompt: string) => {
@@ -94,32 +121,15 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
           )}
           {/* Context usage */}
           <span className="text-[var(--text-muted)]">|</span>
-          <ContextPct used={session.totalInputTokens + session.totalOutputTokens} max={200_000} />
+          <ContextPct
+            used={session.totalInputTokens + session.totalOutputTokens + session.totalCacheCreation + session.totalCacheRead}
+            max={getSettings().claude.contextWindowSize}
+          />
         </div>
         <div className="flex items-center gap-1">
-          <button
-            className={`px-2 py-0.5 rounded text-xs transition-colors ${
-              viewMode === 'structured'
-                ? 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-            onClick={() => setViewMode('structured')}
-          >
-            Chat
-          </button>
-          <button
-            className={`px-2 py-0.5 rounded text-xs transition-colors ${
-              viewMode === 'raw'
-                ? 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-            onClick={() => setViewMode('raw')}
-          >
-            Terminal
-          </button>
           {session.status === 'running' && (
             <button
-              className="ml-2 px-2 py-0.5 rounded text-xs text-[var(--error)] hover:bg-[var(--bg-surface)]"
+              className="px-2 py-0.5 rounded text-xs text-[var(--error)] hover:bg-[var(--bg-surface)]"
               onClick={() => stopSession(sessionId)}
             >
               Stop
@@ -135,6 +145,7 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
             <ClaudeChat messages={session.messages} />
           </div>
           <ClaudeInput
+            ref={inputRef}
             onSend={handleSend}
             disabled={isInputDisabled}
             placeholder={

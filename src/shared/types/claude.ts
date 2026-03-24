@@ -42,7 +42,12 @@ export interface ClaudeAPIMessage {
   content: ClaudeContentBlock[];
   model?: string;
   stop_reason?: string;
-  usage?: { input_tokens: number; output_tokens: number };
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
 }
 
 export type ClaudeContentBlock =
@@ -73,6 +78,8 @@ export interface ClaudeMessage {
   timestamp: number;
   inputTokens?: number;
   outputTokens?: number;
+  cacheCreationTokens?: number;
+  cacheReadTokens?: number;
 }
 
 export interface ClaudeSession {
@@ -86,6 +93,8 @@ export interface ClaudeSession {
   cost?: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  totalCacheCreation: number;
+  totalCacheRead: number;
   error?: string;
   createdAt: number;
 }

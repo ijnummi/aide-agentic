@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getSettings } from './settings.store';
 
-export type SidebarPanel = 'terminals' | 'claude-sessions' | 'git' | 'worktrees' | 'github';
+export type SidebarPanel = 'home' | 'terminals' | 'claude-sessions' | 'git' | 'worktrees' | 'github';
 
 interface UIStore {
   sidebarVisible: boolean;
@@ -16,9 +16,9 @@ interface UIStore {
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({
-  sidebarVisible: false,
+  sidebarVisible: true,
   sidebarWidth: getSettings().layout.sidebarDefaultWidth,
-  activeSidebarPanel: 'terminals',
+  activeSidebarPanel: 'home',
   theme: 'dark',
 
   toggleSidebar: () => {

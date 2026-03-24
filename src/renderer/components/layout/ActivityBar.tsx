@@ -1,7 +1,8 @@
-import { Terminal, Bot, GitBranch, GitFork, Github } from 'lucide-react';
+import { Home, Terminal, Bot, GitBranch, GitFork, Github } from 'lucide-react';
 import { useUIStore, type SidebarPanel } from '../../stores/ui.store';
 
 const items: { panel: SidebarPanel; icon: typeof Terminal; label: string }[] = [
+  { panel: 'home', icon: Home, label: 'Home' },
   { panel: 'terminals', icon: Terminal, label: 'Terminals' },
   { panel: 'claude-sessions', icon: Bot, label: 'Claude Sessions' },
   { panel: 'git', icon: GitBranch, label: 'Git' },

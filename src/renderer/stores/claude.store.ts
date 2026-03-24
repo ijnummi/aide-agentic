@@ -36,6 +36,8 @@ export const useClaudeStore = create<ClaudeStore>((set, get) => ({
       messages: [],
       totalInputTokens: 0,
       totalOutputTokens: 0,
+      totalCacheCreation: 0,
+      totalCacheRead: 0,
       createdAt: Date.now(),
     };
     set((state) => {
@@ -81,6 +83,8 @@ export const useClaudeStore = create<ClaudeStore>((set, get) => ({
           messages: [...session.messages, message],
           totalInputTokens: session.totalInputTokens + (message.inputTokens || 0),
           totalOutputTokens: session.totalOutputTokens + (message.outputTokens || 0),
+          totalCacheCreation: session.totalCacheCreation + (message.cacheCreationTokens || 0),
+          totalCacheRead: session.totalCacheRead + (message.cacheReadTokens || 0),
         });
       }
       return { sessions };

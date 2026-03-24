@@ -61,12 +61,18 @@ export interface AideSettings {
     scrollbarRadius: number;    // px
   };
 
+  /** Claude */
+  claude: {
+    contextWindowSize: number;  // tokens — default context window for % display
+  };
+
   /** Timing */
   timing: {
     autoSaveInterval: number;       // ms
     gitPollInterval: number;        // ms
     focusFollowsMouseDelay: number; // ms
     tabSwitcherDelay: number;       // ms
+    claudeInputRefocusDelay: number; // ms — refocus input after selecting text in chat
   };
 
   /** Icon sizes */
@@ -180,11 +186,16 @@ export const DEFAULT_SETTINGS: AideSettings = {
     scrollbarRadius: 4,
   },
 
+  claude: {
+    contextWindowSize: 200_000,
+  },
+
   timing: {
     autoSaveInterval: 30_000,
     gitPollInterval: 5_000,
     focusFollowsMouseDelay: 200,
     tabSwitcherDelay: 200,
+    claudeInputRefocusDelay: 2_000,
   },
 
   icons: {

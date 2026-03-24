@@ -7,6 +7,7 @@ import { GitService } from './services/git.service';
 import { WorktreeService } from './services/worktree.service';
 import { GitHubService } from './services/github.service';
 import { PersistenceService } from './services/persistence.service';
+import Store from 'electron-store';
 import { registerAllHandlers } from './ipc/index';
 import { detectShell } from './util/shell';
 import { getDefaultCwd } from './util/platform';
@@ -22,6 +23,10 @@ const gitService = new GitService();
 const worktreeService = new WorktreeService();
 const githubService = new GitHubService();
 const persistenceService = new PersistenceService();
+const windowStore = new Store<{ bounds: { x: number; y: number; width: number; height: number }; maximized: boolean }>({
+  name: 'aide-window',
+  defaults: { bounds: { x: undefined as any, y: undefined as any, width: 1400, height: 900 }, maximized: false },
+});
 let mainWindow: BrowserWindow | null = null;
 
 function getWindow(): BrowserWindow | null {
@@ -29,9 +34,14 @@ function getWindow(): BrowserWindow | null {
 }
 
 function createWindow() {
+  const saved = windowStore.get('bounds');
+  const wasMaximized = windowStore.get('maximized');
+
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: saved.width || 1400,
+    height: saved.height || 900,
+    x: saved.x,
+    y: saved.y,
     minWidth: 800,
     minHeight: 600,
     title: 'AIDE',
@@ -44,7 +54,26 @@ function createWindow() {
     },
   });
 
+  if (wasMaximized) {
+    mainWindow.maximize();
+  }
+
   mainWindow.removeMenu();
+
+  // Save bounds on move/resize (debounced)
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  const saveBounds = () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      windowStore.set('maximized', mainWindow.isMaximized());
+      if (!mainWindow.isMaximized()) {
+        windowStore.set('bounds', mainWindow.getBounds());
+      }
+    }, 500);
+  };
+  mainWindow.on('resize', saveBounds);
+  mainWindow.on('move', saveBounds);
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);

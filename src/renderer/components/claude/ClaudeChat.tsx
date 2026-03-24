@@ -55,8 +55,15 @@ export function ClaudeChat({ messages }: ClaudeChatProps) {
               return null;
             })}
             {msg.role === 'assistant' && msg.inputTokens != null && (
-              <div className="text-[11px] text-[var(--text-muted)] mt-1">
-                ↑{formatTokens(msg.inputTokens)} ↓{formatTokens(msg.outputTokens || 0)}
+              <div className="text-[11px] text-[var(--text-muted)] mt-1 flex gap-2">
+                <span>↑{formatTokens(msg.inputTokens)}</span>
+                <span>↓{formatTokens(msg.outputTokens || 0)}</span>
+                {(msg.cacheReadTokens || 0) > 0 && (
+                  <span className="text-[var(--accent)]">⚡{formatTokens(msg.cacheReadTokens!)}</span>
+                )}
+                {(msg.cacheCreationTokens || 0) > 0 && (
+                  <span>+cache:{formatTokens(msg.cacheCreationTokens!)}</span>
+                )}
               </div>
             )}
           </div>

@@ -47,6 +47,8 @@ export function parseClaudeEvent(rawEvent: ClaudeRawEvent): ParsedUpdate | null 
           timestamp: Date.now(),
           inputTokens: apiMessage.usage?.input_tokens,
           outputTokens: apiMessage.usage?.output_tokens,
+          cacheCreationTokens: apiMessage.usage?.cache_creation_input_tokens,
+          cacheReadTokens: apiMessage.usage?.cache_read_input_tokens,
         },
       };
     }
