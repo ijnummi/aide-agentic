@@ -14,7 +14,7 @@ export class PtyService {
   create(request: PtyCreateRequest, callbacks: PtyCallbacks): { pid: number } {
     const shell = request.shell || detectShell();
 
-    const ptyProcess = pty.spawn(shell, [], {
+    const ptyProcess = pty.spawn(shell, request.args || [], {
       name: 'xterm-256color',
       cols: request.cols,
       rows: request.rows,

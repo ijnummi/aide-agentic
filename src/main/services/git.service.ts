@@ -106,6 +106,11 @@ export class GitService {
     await git(cwd, ['checkout', branch]);
   }
 
+  async revertAll(cwd: string): Promise<void> {
+    await git(cwd, ['checkout', '.']);
+    await git(cwd, ['clean', '-fd']);
+  }
+
   async getRemoteUrl(cwd: string): Promise<string | null> {
     try {
       const output = await git(cwd, ['remote', 'get-url', 'origin']);

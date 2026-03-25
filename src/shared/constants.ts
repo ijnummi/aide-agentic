@@ -13,6 +13,9 @@ export const IPC = {
   CLAUDE_STOP: 'claude:stop',
   CLAUDE_EVENT: 'claude:event',
   CLAUDE_STATUS: 'claude:status',
+  CLAUDE_WATCH: 'claude:watch',
+  CLAUDE_UNWATCH: 'claude:unwatch',
+  CLAUDE_STATS: 'claude:stats',
 
   // Git
   GIT_STATUS: 'git:status',
@@ -22,6 +25,7 @@ export const IPC = {
   GIT_COMMIT: 'git:commit',
   GIT_BRANCHES: 'git:branches',
   GIT_CHECKOUT: 'git:checkout',
+  GIT_REVERT_ALL: 'git:revert-all',
 
   // GitHub
   GITHUB_AUTH: 'github:auth',

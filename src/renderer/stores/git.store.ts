@@ -22,6 +22,7 @@ interface GitStore {
   stage: (files: string[]) => Promise<void>;
   commit: (message: string) => Promise<void>;
   checkout: (branch: string) => Promise<void>;
+  revertAll: () => Promise<void>;
   getDiff: (staged?: boolean, file?: string) => Promise<DiffFile[]>;
 }
 
@@ -91,6 +92,12 @@ export const useGitStore = create<GitStore>((set, get) => ({
     await getApi().git.checkout(cwd, branch);
     await get().refresh();
     await get().refreshBranches();
+  },
+
+  revertAll: async () => {
+    const { cwd } = get();
+    await getApi().git.revertAll(cwd);
+    await get().refresh();
   },
 
   getDiff: async (staged, file) => {

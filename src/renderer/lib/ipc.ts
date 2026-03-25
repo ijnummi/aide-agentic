@@ -48,6 +48,9 @@ export interface AideAPI {
     stop(req: ClaudeStopRequest): Promise<void>;
     onEvent(callback: (event: ClaudeStreamEvent) => void): () => void;
     onStatus(callback: (event: ClaudeStatusEvent) => void): () => void;
+    watch(projectPath: string, sessionId: string): Promise<void>;
+    unwatch(sessionId: string): Promise<void>;
+    onStats(callback: (stats: { sessionId: string; model: string; inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number; messageCount: number }) => void): () => void;
   };
   git: {
     status(cwd: string): Promise<GitStatusResponse>;
@@ -57,6 +60,7 @@ export interface AideAPI {
     commit(cwd: string, message: string): Promise<void>;
     branches(cwd: string): Promise<string[]>;
     checkout(cwd: string, branch: string): Promise<void>;
+    revertAll(cwd: string): Promise<void>;
   };
   worktree: {
     list(cwd: string): Promise<WorktreeInfo[]>;

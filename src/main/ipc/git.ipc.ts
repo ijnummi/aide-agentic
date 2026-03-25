@@ -31,4 +31,8 @@ export function registerGitHandlers(gitService: GitService) {
   ipcMain.handle(IPC.GIT_CHECKOUT, (_event, cwd: string, branch: string) => {
     return gitService.checkout(cwd, branch);
   });
+
+  ipcMain.handle(IPC.GIT_REVERT_ALL, (_event, cwd: string) => {
+    return gitService.revertAll(cwd);
+  });
 }

@@ -7,6 +7,7 @@ import { getSettings } from './settings.store';
 interface TerminalStore {
   terminals: Map<string, TerminalInstance>;
   createTerminal: (cwd: string, shell?: string, existingId?: string) => Promise<string>;
+  registerTerminal: (terminal: TerminalInstance) => void;
   killTerminal: (id: string) => Promise<void>;
   updateTerminal: (id: string, partial: Partial<TerminalInstance>) => void;
   removeTerminal: (id: string) => void;
@@ -48,6 +49,14 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     });
 
     return id;
+  },
+
+  registerTerminal: (terminal: TerminalInstance) => {
+    set((state) => {
+      const terminals = new Map(state.terminals);
+      terminals.set(terminal.id, terminal);
+      return { terminals };
+    });
   },
 
   killTerminal: async (id: string) => {

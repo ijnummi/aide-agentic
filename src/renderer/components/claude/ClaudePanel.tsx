@@ -1,20 +1,11 @@
-import { useCallback, useRef, useEffect } from 'react';
-import { ClaudeChat } from './ClaudeChat';
-import { ClaudeInput, type ClaudeInputHandle } from './ClaudeInput';
-import { AgentStatusBadge } from './AgentStatusBadge';
-import { useClaudeStore } from '../../stores/claude.store';
-import { getSettings } from '../../stores/settings.store';
-import { useGitStore } from '../../stores/git.store';
-import { useClaude } from '../../hooks/useClaude';
+import { useEffect, useState, useRef } from 'react';
 import { TerminalPanel } from '../terminal/TerminalPanel';
-import { useState } from 'react';
-
-const MODELS = [
-  { id: 'claude-sonnet-4-5-20250514', label: 'Sonnet 4.5' },
-  { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
-  { id: 'claude-opus-4-6', label: 'Opus 4.6' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
-];
+import { useClaudeStore } from '../../stores/claude.store';
+import { useTerminalStore } from '../../stores/terminal.store';
+import { getApi } from '../../lib/ipc';
+import { useWorkspaceStore } from '../../stores/workspace.store';
+import { getSettings } from '../../stores/settings.store';
+import { baseName } from '../../lib/path';
 
 interface ClaudePanelProps {
   sessionId: string;
@@ -22,47 +13,80 @@ interface ClaudePanelProps {
   isActive?: boolean;
 }
 
+interface SessionStats {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  messageCount: number;
+}
+
 export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
   const session = useClaudeStore((s) => s.sessions.get(sessionId));
-  const setModel = useClaudeStore((s) => s.setModel);
-  const gitBranch = useGitStore((s) => s.branch);
-  const gitStaged = useGitStore((s) => s.staged);
-  const gitUnstaged = useGitStore((s) => s.unstaged);
-  const { sendMessage, stopSession } = useClaude();
-  const [viewMode, setViewMode] = useState<'structured' | 'raw'>('structured');
-  const inputRef = useRef<ClaudeInputHandle>(null);
+  const claudeSessionId = session?.claudeSessionId;
+  const terminals = useTerminalStore((s) => s.terminals);
+  const [stats, setStats] = useState<SessionStats | null>(null);
+  const ptyCreated = useRef(false);
 
+  // Spawn the claude CLI as a PTY (FitAddon will resize to actual size after mount)
   useEffect(() => {
-    if (isActive && viewMode === 'structured') {
-      inputRef.current?.focus();
+    if (ptyCreated.current || !session) return;
+    if (terminals.has(sessionId)) {
+      ptyCreated.current = true;
+      return;
     }
-  }, [isActive, viewMode]);
 
-  // Refocus input after user clicks in chat area (e.g. to select/copy text)
+    ptyCreated.current = true;
+    const args: string[] = [];
+    if (claudeSessionId) {
+      args.push('--resume', claudeSessionId);
+    }
+
+    getApi().pty.create({
+      id: sessionId,
+      cwd,
+      shell: 'claude',
+      args,
+      cols: 80,
+      rows: 24,
+    }).then((response) => {
+      useTerminalStore.getState().registerTerminal({
+        id: sessionId,
+        pid: response.pid,
+        cwd,
+        shell: 'claude',
+        title: 'Claude',
+        status: 'running',
+        createdAt: Date.now(),
+      });
+    });
+  }, [sessionId, session, claudeSessionId, cwd, terminals]);
+
+  // Watch the session JSONL for stats
   useEffect(() => {
-    if (!isActive || viewMode !== 'structured') return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (!claudeSessionId) return;
+    const projectPath = useWorkspaceStore.getState().projectPath;
+    getApi().claude.watch(projectPath, claudeSessionId);
 
-    const handleMouseUp = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, getSettings().timing.claudeInputRefocusDelay);
-    };
+    const unsub = getApi().claude.onStats((incoming) => {
+      if (incoming.sessionId === claudeSessionId) {
+        setStats({
+          model: incoming.model,
+          inputTokens: incoming.inputTokens,
+          outputTokens: incoming.outputTokens,
+          cacheCreationTokens: incoming.cacheCreationTokens,
+          cacheReadTokens: incoming.cacheReadTokens,
+          messageCount: incoming.messageCount,
+        });
+      }
+    });
 
-    window.addEventListener('mouseup', handleMouseUp);
     return () => {
-      window.removeEventListener('mouseup', handleMouseUp);
-      if (timer) clearTimeout(timer);
+      getApi().claude.unwatch(claudeSessionId);
+      unsub();
     };
-  }, [isActive, viewMode]);
-
-  const handleSend = useCallback(
-    (prompt: string) => {
-      sendMessage(sessionId, prompt);
-    },
-    [sessionId, sendMessage],
-  );
+  }, [claudeSessionId]);
 
   if (!session) {
     return (
@@ -72,109 +96,39 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
     );
   }
 
-  const isInputDisabled = session.status === 'running' || session.status === 'starting';
+  const totalTokens = stats
+    ? stats.inputTokens + stats.outputTokens + stats.cacheCreationTokens + stats.cacheReadTokens
+    : 0;
+  const contextMax = getSettings().claude.contextWindowSize;
+  const contextPct = contextMax > 0 ? Math.min((totalTokens / contextMax) * 100, 100) : 0;
+  const contextColor = contextPct < 50 ? 'var(--success)' : contextPct < 80 ? 'var(--warning)' : 'var(--error)';
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header / Status Line */}
-      <div className="flex items-center justify-between px-3 h-8 bg-[var(--bg-secondary)] border-b border-[var(--border)] text-xs">
-        <div className="flex items-center gap-2">
-          <AgentStatusBadge status={session.status} />
-          <select
-            className="bg-[var(--bg-surface)] text-[var(--text-primary)] text-xs rounded px-1.5 py-0.5 border border-[var(--border)] outline-none"
-            value={session.model || ''}
-            onChange={(e) => setModel(sessionId, e.target.value || '')}
-            disabled={session.status === 'running'}
-          >
-            <option value="">Default</option>
-            {MODELS.map((m) => (
-              <option key={m.id} value={m.id}>{m.label}</option>
-            ))}
-          </select>
-          <span className="text-[var(--text-muted)]">|</span>
-          {/* Path */}
-          <span className="text-[var(--text-secondary)]">
-            .../{session.cwd.split('/').pop()}
-          </span>
-          {/* Branch + diff stats */}
-          {gitBranch && (
-            <>
-              <span className="text-[var(--text-muted)]">|</span>
-              <span className="text-[var(--accent)]">⎇ {gitBranch}</span>
-              {(gitStaged.length > 0 || gitUnstaged.length > 0) && (
-                <span>
-                  <span className="text-[var(--text-muted)]">(</span>
-                  <span className="text-[var(--success)]">+{gitStaged.length}</span>
-                  <span className="text-[var(--text-muted)]">,</span>
-                  <span className="text-[var(--warning)]">~{gitUnstaged.length}</span>
-                  <span className="text-[var(--text-muted)]">)</span>
-                </span>
-              )}
-            </>
-          )}
-          {/* Worktree indicator */}
-          {session.worktreeId && (
-            <>
-              <span className="text-[var(--text-muted)]">𖠰</span>
-              <span className="text-[var(--text-secondary)]">{session.worktreeId.split('/').pop()}</span>
-            </>
-          )}
-          {/* Context usage */}
-          <span className="text-[var(--text-muted)]">|</span>
-          <ContextPct
-            used={session.totalInputTokens + session.totalOutputTokens + session.totalCacheCreation + session.totalCacheRead}
-            max={getSettings().claude.contextWindowSize}
-          />
-        </div>
-        <div className="flex items-center gap-1">
-          {session.status === 'running' && (
-            <button
-              className="px-2 py-0.5 rounded text-xs text-[var(--error)] hover:bg-[var(--bg-surface)]"
-              onClick={() => stopSession(sessionId)}
-            >
-              Stop
-            </button>
-          )}
-        </div>
+      {/* Stats bar */}
+      <div className="flex items-center gap-3 px-3 h-7 bg-[var(--bg-secondary)] border-b border-[var(--border)] text-xs text-[var(--text-muted)] select-none">
+        <span className="text-[var(--text-secondary)]">{baseName(cwd)}</span>
+        {stats?.model && (
+          <span className="text-[var(--text-secondary)]">{stats.model.replace('claude-', '').replace(/-\d+$/, '')}</span>
+        )}
+        {stats && stats.messageCount > 0 && (
+          <>
+            <span title={`${totalTokens.toLocaleString()} tokens`}>
+              <span style={{ color: contextColor }} className="font-medium">
+                {contextPct.toFixed(0)}%
+              </span>
+              {' ctx'}
+            </span>
+            <span>↑{stats.inputTokens.toLocaleString()} ↓{stats.outputTokens.toLocaleString()}</span>
+            <span>{stats.messageCount} msgs</span>
+          </>
+        )}
       </div>
 
-      {/* Content */}
-      {viewMode === 'structured' ? (
-        <>
-          <div className="flex-1 overflow-hidden">
-            <ClaudeChat messages={session.messages} />
-          </div>
-          <ClaudeInput
-            ref={inputRef}
-            onSend={handleSend}
-            disabled={isInputDisabled}
-            placeholder={
-              session.status === 'running'
-                ? 'Claude is working...'
-                : 'Send a message to Claude...'
-            }
-          />
-        </>
-      ) : (
-        <div className="flex-1 overflow-hidden">
-          <TerminalPanel terminalId={sessionId} isActive={isActive} />
-        </div>
-      )}
+      {/* Terminal running claude CLI */}
+      <div className="flex-1 overflow-hidden">
+        <TerminalPanel terminalId={sessionId} isActive={isActive} />
+      </div>
     </div>
-  );
-}
-
-function ContextPct({ used, max }: { used: number; max: number }) {
-  const pct = max > 0 ? Math.min((used / max) * 100, 100) : 0;
-  const color = pct < 50 ? 'var(--success)' : pct < 80 ? 'var(--warning)' : 'var(--error)';
-
-  return (
-    <span
-      style={{ color }}
-      className="font-medium"
-      title={`${used.toLocaleString()} / ${max.toLocaleString()} tokens`}
-    >
-      {pct.toFixed(1)}%
-    </span>
   );
 }

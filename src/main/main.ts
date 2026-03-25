@@ -7,6 +7,7 @@ import { GitService } from './services/git.service';
 import { WorktreeService } from './services/worktree.service';
 import { GitHubService } from './services/github.service';
 import { PersistenceService } from './services/persistence.service';
+import { ClaudeWatcherService } from './services/claude-watcher.service';
 import Store from 'electron-store';
 import { registerAllHandlers } from './ipc/index';
 import { detectShell } from './util/shell';
@@ -25,6 +26,7 @@ const gitService = new GitService();
 const worktreeService = new WorktreeService();
 const githubService = new GitHubService();
 const persistenceService = new PersistenceService();
+const claudeWatcher = new ClaudeWatcherService();
 const windowStore = new Store<{ bounds: { x: number; y: number; width: number; height: number }; maximized: boolean }>({
   name: 'aide-window',
   defaults: { bounds: { x: undefined as any, y: undefined as any, width: 1400, height: 900 }, maximized: false },
@@ -119,6 +121,19 @@ ipcMain.handle(IPC.SHELL_INFO, () => ({
 // Open external URLs
 ipcMain.handle(IPC.OPEN_EXTERNAL, (_event, url: string) => {
   return shell.openExternal(url);
+});
+
+// Claude session watcher
+ipcMain.handle(IPC.CLAUDE_WATCH, (_event, projectPath: string, sessionId: string) => {
+  claudeWatcher.watch(projectPath, sessionId, (stats) => {
+    const win = getWindow();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send(IPC.CLAUDE_STATS, stats);
+    }
+  });
+});
+ipcMain.handle(IPC.CLAUDE_UNWATCH, (_event, sessionId: string) => {
+  claudeWatcher.unwatch(sessionId);
 });
 
 // Register IPC handlers

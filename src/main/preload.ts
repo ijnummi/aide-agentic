@@ -79,6 +79,17 @@ contextBridge.exposeInMainWorld('aide', {
       ipcRenderer.on(IPC.CLAUDE_STATUS, handler);
       return () => ipcRenderer.removeListener(IPC.CLAUDE_STATUS, handler);
     },
+    watch(projectPath: string, sessionId: string): Promise<void> {
+      return ipcRenderer.invoke(IPC.CLAUDE_WATCH, projectPath, sessionId);
+    },
+    unwatch(sessionId: string): Promise<void> {
+      return ipcRenderer.invoke(IPC.CLAUDE_UNWATCH, sessionId);
+    },
+    onStats(callback: (stats: { sessionId: string; model: string; inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number; messageCount: number }) => void): () => void {
+      const handler = (_event: Electron.IpcRendererEvent, data: Parameters<typeof callback>[0]) => callback(data);
+      ipcRenderer.on(IPC.CLAUDE_STATS, handler);
+      return () => ipcRenderer.removeListener(IPC.CLAUDE_STATS, handler);
+    },
   },
 
   git: {
@@ -102,6 +113,9 @@ contextBridge.exposeInMainWorld('aide', {
     },
     checkout(cwd: string, branch: string): Promise<void> {
       return ipcRenderer.invoke(IPC.GIT_CHECKOUT, cwd, branch);
+    },
+    revertAll(cwd: string): Promise<void> {
+      return ipcRenderer.invoke(IPC.GIT_REVERT_ALL, cwd);
     },
   },
 

@@ -14,6 +14,7 @@ export interface PtyCreateRequest {
   id: string;
   cwd: string;
   shell?: string;
+  args?: string[];
   cols: number;
   rows: number;
   env?: Record<string, string>;
