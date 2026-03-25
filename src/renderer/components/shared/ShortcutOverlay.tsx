@@ -27,7 +27,7 @@ export function ShortcutOverlay({ open, onClose }: ShortcutOverlayProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg shadow-2xl w-[480px] max-h-[70vh] overflow-hidden"
+        className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg shadow-2xl w-[720px] max-h-[70vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -36,11 +36,11 @@ export function ShortcutOverlay({ open, onClose }: ShortcutOverlayProps) {
           <span className="text-sm font-semibold text-[var(--text-primary)]">Keyboard Shortcuts</span>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto p-4 flex flex-col gap-4">
+        {/* Content — two columns */}
+        <div className="overflow-y-auto p-4 grid grid-cols-2 gap-x-8 gap-y-4">
           {Array.from(grouped.entries()).map(([category, entries]) => (
             <div key={category}>
-              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+              <div className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">
                 {category}
               </div>
               <div className="flex flex-col gap-1">
@@ -49,7 +49,7 @@ export function ShortcutOverlay({ open, onClose }: ShortcutOverlayProps) {
                     key={entry.id}
                     className="flex items-center justify-between py-1 px-1"
                   >
-                    <span className="text-sm text-[var(--text-primary)]">{entry.label}</span>
+                    <span style={{ fontSize: 15 }} className="text-[var(--text-primary)]">{entry.label}</span>
                     <Kbd shortcut={entry.shortcut} />
                   </div>
                 ))}
@@ -73,7 +73,7 @@ function Kbd({ shortcut }: { shortcut: string }) {
     <span className="flex items-center gap-0.5">
       {parts.map((part, i) => (
         <span key={i}>
-          <kbd className="inline-block px-1.5 py-0.5 text-[11px] font-mono rounded bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)]">
+          <kbd className="inline-block px-1.5 py-0.5 text-[13px] font-mono rounded bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)]">
             {part}
           </kbd>
           {i < parts.length - 1 && <span className="text-[var(--text-muted)] mx-0.5">+</span>}
