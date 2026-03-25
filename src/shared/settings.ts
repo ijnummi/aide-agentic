@@ -73,6 +73,7 @@ export interface AideSettings {
     focusFollowsMouseDelay: number; // ms
     tabSwitcherDelay: number;       // ms
     claudeInputRefocusDelay: number; // ms — refocus input after selecting text in chat
+    terminalInitDelay: number;       // ms — delay before cd to cwd on terminal creation
   };
 
   /** Icon sizes */
@@ -196,6 +197,7 @@ export const DEFAULT_SETTINGS: AideSettings = {
     focusFollowsMouseDelay: 200,
     tabSwitcherDelay: 200,
     claudeInputRefocusDelay: 2_000,
+    terminalInitDelay: 150,
   },
 
   icons: {

@@ -135,7 +135,7 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
           />
         )}
         {activeTab?.type === 'diff' && (
-          <DiffViewer files={(activeTab.metadata.diffFiles as DiffFile[]) || []} />
+          <DiffViewer files={(activeTab.metadata.diffFiles as DiffFile[]) || []} scrollToFile={activeTab.metadata.scrollToFile as string | undefined} />
         )}
         {activeTab?.type === 'pr' && (
           <PRDetailLoader cwd={cwd} prNumber={activeTab.metadata.prNumber as number} selectPR={selectPR} />

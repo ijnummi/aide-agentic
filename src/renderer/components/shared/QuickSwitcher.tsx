@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Terminal, Bot, GitCompare, GitPullRequest, GitFork } from 'lucide-react';
-import { useLayoutStore } from '../../stores/layout.store';
+import { useLayoutStore, findPane } from '../../stores/layout.store';
 import { useWorktreeStore } from '../../stores/worktree.store';
 import { useWorkspaceStore } from '../../stores/workspace.store';
 import { switchWorkspace } from '../../lib/workspace';
-import type { TabType, TabItem, LayoutTree, PaneLeaf } from '../../../shared/types/layout';
+import { baseName } from '../../lib/path';
+import type { TabType, TabItem, LayoutTree } from '../../../shared/types/layout';
 
 const tabIcons: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
@@ -52,7 +53,6 @@ export function QuickSwitcher({ open, onClose }: QuickSwitcherProps) {
   const items = useMemo((): QuickSwitcherItem[] => {
     const result: QuickSwitcherItem[] = [];
 
-    // Tabs section
     if (root) {
       const allTabs = collectTabs(root);
       for (const { tab, paneId } of allTabs) {
@@ -70,60 +70,37 @@ export function QuickSwitcher({ open, onClose }: QuickSwitcherProps) {
       }
     }
 
-    // Worktrees section
     for (const wt of worktrees) {
-      const dirName = wt.path.split('/').pop() || wt.path;
       result.push({
         id: `wt:${wt.path}`,
-        label: dirName,
+        label: baseName(wt.path),
         detail: wt.branch,
         section: 'worktrees',
         icon: GitFork,
         active: wt.path === currentPath,
-        action: () => {
-          switchWorkspace(wt.path);
-        },
+        action: () => { switchWorkspace(wt.path); },
       });
     }
 
     return result;
   }, [root, worktrees, currentPath, setActiveTab, setActivePane]);
 
-  const filtered = useMemo(() => {
-    if (!query) return items;
+  // Filter + group + flatten in one pass
+  const { sections, flatItems } = useMemo(() => {
     const q = query.toLowerCase();
-    return items.filter(
-      (item) =>
-        item.label.toLowerCase().includes(q) ||
-        item.detail?.toLowerCase().includes(q),
-    );
+    const matched = query ? items.filter((i) => i.label.toLowerCase().includes(q) || i.detail?.toLowerCase().includes(q)) : items;
+    const tabs = matched.filter((i) => i.section === 'tabs');
+    const wts = matched.filter((i) => i.section === 'worktrees');
+    const secs: { label: string; items: QuickSwitcherItem[]; startIndex: number }[] = [];
+    let offset = 0;
+    if (tabs.length > 0) { secs.push({ label: 'Open Tabs', items: tabs, startIndex: offset }); offset += tabs.length; }
+    if (wts.length > 0) { secs.push({ label: 'Worktrees', items: wts, startIndex: offset }); }
+    return { sections: secs, flatItems: [...tabs, ...wts] };
   }, [items, query]);
 
-  // Group filtered items by section, preserving order
-  const sections = useMemo(() => {
-    const tabs = filtered.filter((i) => i.section === 'tabs');
-    const wts = filtered.filter((i) => i.section === 'worktrees');
-    const result: { label: string; items: QuickSwitcherItem[] }[] = [];
-    if (tabs.length > 0) result.push({ label: 'Open Tabs', items: tabs });
-    if (wts.length > 0) result.push({ label: 'Worktrees', items: wts });
-    return result;
-  }, [filtered]);
-
-  // Flat list for keyboard navigation
-  const flatItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
-
-  // Find the currently active tab ID
   const activeTabId = useMemo(() => {
     if (!root) return null;
-    function findPane(node: LayoutTree): PaneLeaf | null {
-      if (node.type === 'pane') return node.id === activePaneId ? node : null;
-      for (const child of node.children) {
-        const found = findPane(child);
-        if (found) return found;
-      }
-      return null;
-    }
-    return findPane(root)?.activeTabId ?? null;
+    return findPane(root, activePaneId)?.activeTabId ?? null;
   }, [root, activePaneId]);
 
   useEffect(() => {
@@ -172,8 +149,6 @@ export function QuickSwitcher({ open, onClose }: QuickSwitcherProps) {
 
   if (!open) return null;
 
-  let globalIndex = 0;
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15%]" onClick={onClose}>
       <div
@@ -196,8 +171,8 @@ export function QuickSwitcher({ open, onClose }: QuickSwitcherProps) {
               <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-[var(--text-muted)] bg-[var(--bg-primary)]">
                 {section.label}
               </div>
-              {section.items.map((item) => {
-                const idx = globalIndex++;
+              {section.items.map((item, itemIndex) => {
+                const idx = section.startIndex + itemIndex;
                 const isSelected = idx === selectedIndex;
                 const Icon = item.icon;
                 return (

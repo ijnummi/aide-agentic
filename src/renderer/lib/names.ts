@@ -27,9 +27,10 @@ export function claudeName(): string {
   return CLAUDE_NAMES[(claudeCounter - 1) % CLAUDE_NAMES.length];
 }
 
+import { baseName } from './path';
+
 export function diffName(file: string): string {
-  const base = file.split('/').pop() || file;
-  return `D:${base}`;
+  return `D:${baseName(file)}`;
 }
 
 export function prName(number: number): string {

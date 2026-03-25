@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { baseName } from '../lib/path';
 
 interface WorkspaceStore {
   projectPath: string;
@@ -12,7 +13,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   projectName: '',
 
   setProjectPath: (path: string) => {
-    const name = path.split('/').pop() || path;
+    const name = baseName(path);
     set({ projectPath: path, projectName: name });
   },
 }));

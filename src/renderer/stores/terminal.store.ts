@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { TerminalInstance } from '../../shared/types/terminal';
 import { getApi } from '../lib/ipc';
 import { terminalName } from '../lib/names';
+import { getSettings } from './settings.store';
 
 interface TerminalStore {
   terminals: Map<string, TerminalInstance>;
@@ -28,7 +29,7 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     setTimeout(() => {
       const quoted = cwd.includes("'") ? `"${cwd}"` : `'${cwd}'`;
       getApi().pty.write({ id, data: `cd ${quoted} && clear\r` });
-    }, 150);
+    }, getSettings().timing.terminalInitDelay);
 
     const terminal: TerminalInstance = {
       id,

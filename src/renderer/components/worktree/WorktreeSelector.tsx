@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { GitFork, ChevronDown } from 'lucide-react';
 import { useWorktreeStore } from '../../stores/worktree.store';
 import { useWorkspaceStore } from '../../stores/workspace.store';
+import { baseName } from '../../lib/path';
 
 interface WorktreeSelectorProps {
   onSelect?: (path: string) => void;
@@ -23,7 +24,7 @@ export function WorktreeSelector({ onSelect }: WorktreeSelectorProps) {
         onClick={() => setOpen(!open)}
       >
         <GitFork size={12} />
-        <span>{current?.path.split('/').pop() ?? `${worktrees.length} worktrees`}</span>
+        <span>{current ? baseName(current.path) : `${worktrees.length} worktrees`}</span>
         <ChevronDown size={10} />
       </button>
 
@@ -42,7 +43,7 @@ export function WorktreeSelector({ onSelect }: WorktreeSelectorProps) {
               >
                 <GitFork size={12} className={wt.isMain ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'} />
                 <div className="flex-1 min-w-0">
-                  <div className="truncate">{wt.path.split('/').pop()}</div>
+                  <div className="truncate">{baseName(wt.path)}</div>
                   <div className="text-[10px] text-[var(--text-muted)]">{wt.branch}</div>
                 </div>
               </button>

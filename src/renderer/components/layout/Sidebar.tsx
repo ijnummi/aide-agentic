@@ -75,6 +75,28 @@ export function Sidebar() {
     [getDiff, addTab, activePaneId],
   );
 
+  const removeTabById = useLayoutStore((s) => s.removeTabById);
+  const insertTabAt = useLayoutStore((s) => s.insertTabAt);
+  const setActiveTab = useLayoutStore((s) => s.setActiveTab);
+
+  const handleOpenAllChanges = useCallback(async (scrollToFile?: string) => {
+    const [stagedFiles, unstagedFiles] = await Promise.all([
+      getDiff(true),
+      getDiff(false),
+    ]);
+    const allFiles = [...stagedFiles, ...unstagedFiles];
+    // Remove old tab so metadata (scrollToFile, diffFiles) refreshes
+    removeTabById('diff-all-changes');
+    const tab: TabItem = {
+      id: 'diff-all-changes',
+      type: 'diff',
+      title: 'All Changes',
+      metadata: { diffFiles: allFiles, scrollToFile, reservedIndex: 3 },
+    };
+    insertTabAt(activePaneId, tab, 3);
+    setActiveTab(activePaneId, tab.id);
+  }, [getDiff, insertTabAt, setActiveTab, removeTabById, activePaneId]);
+
   return (
     <div
       className="flex flex-col bg-[var(--bg-secondary)] border-r border-[var(--border)] overflow-hidden"
@@ -101,7 +123,7 @@ export function Sidebar() {
         {activeSidebarPanel === 'git' && (
           <div className="p-1">
             <BranchSelector />
-            <GitStatus onOpenDiff={handleOpenDiff} />
+            <GitStatus onOpenDiff={handleOpenDiff} onOpenAllChanges={handleOpenAllChanges} />
             <CommitPanel />
           </div>
         )}

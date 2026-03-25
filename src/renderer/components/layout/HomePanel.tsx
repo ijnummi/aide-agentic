@@ -10,6 +10,7 @@ import { useClaude } from '../../hooks/useClaude';
 import { getApi } from '../../lib/ipc';
 import { switchWorkspace } from '../../lib/workspace';
 import { claudeName } from '../../lib/names';
+import { baseName } from '../../lib/path';
 import type { TabItem } from '../../../shared/types/layout';
 import { useEffect, useState } from 'react';
 
@@ -136,7 +137,7 @@ export function HomePanel({ cwd }: HomePanelProps) {
           <ItemRow
             key={s.id}
             icon={Bot}
-            label={s.cwd.split('/').pop() || 'Session'}
+            label={baseName(s.cwd)}
             sublabel={s.model || 'default model'}
             status={
               s.status === 'running' ? 'var(--accent)' :
@@ -156,7 +157,7 @@ export function HomePanel({ cwd }: HomePanelProps) {
             <ItemRow
               key={wt.path}
               icon={GitFork}
-              label={wt.path.split('/').pop() || wt.path}
+              label={baseName(wt.path)}
               sublabel={wt.branch}
               status={wt.path === projectPath ? 'var(--accent)' : 'var(--text-muted)'}
               onDoubleClick={() => switchWorkspace(wt.path)}

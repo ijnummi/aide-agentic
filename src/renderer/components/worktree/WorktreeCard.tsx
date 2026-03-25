@@ -1,5 +1,6 @@
 import { GitFork, Trash2 } from 'lucide-react';
 import type { WorktreeInfo } from '../../../shared/types/worktree';
+import { baseName } from '../../lib/path';
 import { IconButton } from '../shared/IconButton';
 
 interface WorktreeCardProps {
@@ -8,7 +9,7 @@ interface WorktreeCardProps {
 }
 
 export function WorktreeCard({ worktree, onRemove }: WorktreeCardProps) {
-  const dirName = worktree.path.split('/').pop() || worktree.path;
+  const dirName = baseName(worktree.path);
 
   return (
     <div className="flex items-center gap-2.5 px-2 py-2 hover:bg-[var(--bg-surface)] rounded group">

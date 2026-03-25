@@ -12,11 +12,22 @@ interface LayoutSnapshot {
   activePaneId: string;
 }
 
+const MAX_CACHED_LAYOUTS = 20;
+
 /** In-memory layout cache per worktree path (survives switches, not app restarts) */
 const layoutCache = new Map<string, LayoutSnapshot>();
 
+function cacheLayout(key: string, snapshot: LayoutSnapshot) {
+  layoutCache.delete(key); // move to end (most recent)
+  layoutCache.set(key, snapshot);
+  if (layoutCache.size > MAX_CACHED_LAYOUTS) {
+    const oldest = layoutCache.keys().next().value!;
+    layoutCache.delete(oldest);
+  }
+}
+
 /** Find the first pane leaf in a layout tree */
-function firstPane(node: LayoutTree): PaneLeaf | null {
+export function firstPane(node: LayoutTree): PaneLeaf | null {
   if (node.type === 'pane') return node;
   for (const child of node.children) {
     const found = firstPane(child);
@@ -132,7 +143,7 @@ export async function switchWorkspace(newPath: string) {
 
   // 1. Cache current layout in memory
   if (current && layoutStore.root) {
-    layoutCache.set(current, {
+    cacheLayout(current, {
       root: layoutStore.root,
       activePaneId: layoutStore.activePaneId,
     });

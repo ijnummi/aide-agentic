@@ -17,6 +17,8 @@ if (started) {
   app.quit();
 }
 
+app.commandLine.appendSwitch('disable-smooth-scrolling');
+
 const ptyService = new PtyService();
 const claudeService = new ClaudeService();
 const gitService = new GitService();

@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { Plus, X, Terminal, Bot, GitCompare, GitPullRequest } from 'lucide-react';
+import { getTabNumbers } from '../../lib/tab-numbers';
 import type { TabItem, TabType } from '../../../shared/types/layout';
 
 interface TabBarProps {
@@ -20,13 +22,15 @@ const tabIcons: Record<TabType, React.ComponentType<{ size?: number; className?:
 };
 
 export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onNewTerminal, trailing }: TabBarProps) {
+  const tabNumbers = useMemo(() => getTabNumbers(tabs), [tabs]);
+
   return (
     <div className="flex items-center h-9 bg-[var(--bg-secondary)] border-b border-[var(--border)] select-none">
       <div className="flex flex-1 overflow-x-auto">
-        {tabs.map((tab, index) => {
+        {tabs.map((tab) => {
           const Icon = tabIcons[tab.type] || Terminal;
           const isActive = tab.id === activeTabId;
-          const posNumber = index + 1;
+          const posNumber = tabNumbers.get(tab.id) ?? 0;
           const isPrimary = tab.metadata?.isPrimary === true;
 
           return (

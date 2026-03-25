@@ -8,23 +8,14 @@ import { getTerminalCache } from './useTerminal';
 import { getSettings } from '../stores/settings.store';
 import { useWorktreeStore } from '../stores/worktree.store';
 import { useWorkspaceStore } from '../stores/workspace.store';
-import { switchWorkspace } from '../lib/workspace';
+import { switchWorkspace, firstPane } from '../lib/workspace';
+import { findTabByNumber, ALL_CHANGES_TAB_ID, RESERVED_NUMBER } from '../lib/tab-numbers';
 import type { TabItem, PaneLeaf, LayoutTree, LayoutNode } from '../../shared/types/layout';
 
 function findPaneById(node: LayoutTree, paneId: string): PaneLeaf | null {
   if (node.type === 'pane') return node.id === paneId ? node : null;
   for (const child of node.children) {
     const found = findPaneById(child, paneId);
-    if (found) return found;
-  }
-  return null;
-}
-
-/** Get the first pane leaf in a subtree (leftmost/topmost) */
-function firstPane(node: LayoutTree): PaneLeaf | null {
-  if (node.type === 'pane') return node;
-  for (const child of node.children) {
-    const found = firstPane(child);
     if (found) return found;
   }
   return null;
@@ -78,18 +69,13 @@ function findAdjacentPane(root: LayoutTree, paneId: string, direction: Direction
   return search(root);
 }
 
-/** Find the Nth tab (1-based) in the given pane */
-function tabAtIndex(pane: PaneLeaf, num: number): string | null {
-  const index = num - 1;
-  return index >= 0 && index < pane.tabs.length ? pane.tabs[index].id : null;
-}
-
 interface UseKeyboardOptions {
   cwd: string;
   onNewClaudeSession: () => void;
+  onOpenAllChanges?: () => void;
 }
 
-export function useKeyboard({ cwd, onNewClaudeSession }: UseKeyboardOptions) {
+export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKeyboardOptions) {
   const addTab = useLayoutStore((s) => s.addTab);
   const splitPane = useLayoutStore((s) => s.splitPane);
   const setActiveTab = useLayoutStore((s) => s.setActiveTab);
@@ -188,7 +174,7 @@ export function useKeyboard({ cwd, onNewClaudeSession }: UseKeyboardOptions) {
         return;
       }
 
-      // Alt+1-0 — focus tab by position in active pane
+      // Alt+1-0 — focus tab by display number (4 = All Changes, reserved)
       if (e.altKey && !e.ctrlKey && !e.shiftKey && e.key >= '0' && e.key <= '9') {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -197,10 +183,12 @@ export function useKeyboard({ cwd, onNewClaudeSession }: UseKeyboardOptions) {
         if (layoutState.root) {
           const pane = findPaneById(layoutState.root, layoutState.activePaneId);
           if (pane) {
-            const tabId = tabAtIndex(pane, num);
+            const tabId = findTabByNumber(pane.tabs, num);
             if (tabId) {
               layoutState.setActiveTab(pane.id, tabId);
               getTerminalCache().get(tabId)?.term.focus();
+            } else if (num === RESERVED_NUMBER && onOpenAllChanges) {
+              onOpenAllChanges();
             }
           }
         }

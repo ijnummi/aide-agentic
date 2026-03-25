@@ -39,6 +39,19 @@ export function App() {
     document.documentElement.style.setProperty('font-family', settings.font.family);
   }, [theme, settings.font.uiSize, settings.font.family]);
 
+  // Ctrl+wheel — zoom
+  useEffect(() => {
+    const { zoomIn, zoomOut } = useUIStore.getState();
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      if (e.deltaY < 0) zoomIn();
+      else if (e.deltaY > 0) zoomOut();
+    };
+    window.addEventListener('wheel', handler, { passive: false });
+    return () => window.removeEventListener('wheel', handler);
+  }, []);
+
   // Ctrl+Shift+P — command palette, Ctrl+P — quick switcher, ? — shortcut overlay
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

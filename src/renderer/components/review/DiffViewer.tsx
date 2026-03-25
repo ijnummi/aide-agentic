@@ -1,10 +1,59 @@
+import { useEffect, useRef, useCallback } from 'react';
+import { useUIStore } from '../../stores/ui.store';
 import type { DiffFile } from '../../../shared/types/git';
 
 interface DiffViewerProps {
   files: DiffFile[];
+  scrollToFile?: string;
 }
 
-export function DiffViewer({ files }: DiffViewerProps) {
+export function DiffViewer({ files, scrollToFile }: DiffViewerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to file at 15% from the top
+  useEffect(() => {
+    if (!scrollToFile || !containerRef.current) return;
+    const el = containerRef.current.querySelector(`[data-file-path="${CSS.escape(scrollToFile)}"]`);
+    if (!el || !(el instanceof HTMLElement)) return;
+    const container = containerRef.current;
+    const offset = el.offsetTop - container.offsetTop - container.clientHeight * 0.15;
+    container.scrollTop = Math.max(0, offset);
+  }, [scrollToFile]);
+
+  // Track which file is at the 15% mark during scroll
+  const updateVisibleFile = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const targetY = container.scrollTop + container.clientHeight * 0.15;
+    const fileEls = container.querySelectorAll<HTMLElement>('[data-file-path]');
+    let visible = '';
+    for (const el of fileEls) {
+      const top = el.offsetTop - container.offsetTop;
+      if (top <= targetY) {
+        visible = el.dataset.filePath || '';
+      } else {
+        break;
+      }
+    }
+    const prev = useUIStore.getState().visibleDiffFile;
+    if (visible !== prev) {
+      useUIStore.setState({ visibleDiffFile: visible });
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.addEventListener('scroll', updateVisibleFile, { passive: true });
+    updateVisibleFile();
+    return () => container.removeEventListener('scroll', updateVisibleFile);
+  }, [updateVisibleFile, files]);
+
+  // Clear visible file on unmount
+  useEffect(() => {
+    return () => useUIStore.setState({ visibleDiffFile: '' });
+  }, []);
+
   if (files.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm">
@@ -14,23 +63,26 @@ export function DiffViewer({ files }: DiffViewerProps) {
   }
 
   return (
-    <div className="overflow-y-auto h-full p-2">
+    <div ref={containerRef} className="overflow-y-auto h-full p-2">
       {files.map((file, fi) => (
-        <div key={fi} className="mb-4 border border-[var(--border)] rounded overflow-hidden">
+        <div key={fi} style={{ marginBottom: 16 }} data-file-path={file.newPath}>
           {/* File header */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-surface)] text-xs border-b border-[var(--border)]">
+          <div className="flex items-center gap-2 px-3 py-3 text-sm border border-[var(--border)] rounded-t">
             <StatusBadge status={file.status} />
-            <span className="font-medium text-[var(--text-primary)]">
+            <span className="font-semibold text-[var(--text-primary)]">
               {file.status === 'renamed' ? `${file.oldPath} → ${file.newPath}` : file.newPath}
             </span>
           </div>
 
           {/* Hunks */}
+          <div style={{ marginLeft: 24 }} className="border border-[var(--border)] border-t-0 rounded-b overflow-hidden">
           {file.hunks.map((hunk, hi) => (
             <div key={hi}>
-              <div className="px-3 py-0.5 bg-[var(--bg-secondary)] text-[var(--accent)] text-xs font-mono border-b border-[var(--border)]">
-                @@ -{hunk.oldStart},{hunk.oldCount} +{hunk.newStart},{hunk.newCount} @@ {hunk.header}
-              </div>
+              {hi > 0 && (
+                <div className="px-3 py-0.5 bg-[var(--bg-secondary)] text-[10px] text-[var(--text-muted)] font-mono text-center border-y border-[var(--border)]">
+                  ···
+                </div>
+              )}
               <div className="font-mono text-xs">
                 {hunk.lines.map((line, li) => {
                   let bg = '';
@@ -71,6 +123,7 @@ export function DiffViewer({ files }: DiffViewerProps) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       ))}
     </div>

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Bot, Plus, X } from 'lucide-react';
 import { useClaudeStore } from '../../stores/claude.store';
 import { useWorkspaceStore } from '../../stores/workspace.store';
@@ -14,9 +15,12 @@ export function SessionList({ onSelectSession, onNewSession }: SessionListProps)
   const removeSession = useClaudeStore((s) => s.removeSession);
   const currentPath = useWorkspaceStore((s) => s.projectPath);
 
-  const sessionList = Array.from(sessions.values())
-    .filter((s) => s.cwd === currentPath)
-    .sort((a, b) => b.createdAt - a.createdAt);
+  const sessionList = useMemo(
+    () => Array.from(sessions.values())
+      .filter((s) => s.cwd === currentPath)
+      .sort((a, b) => b.createdAt - a.createdAt),
+    [sessions, currentPath],
+  );
 
   return (
     <div className="flex flex-col h-full">

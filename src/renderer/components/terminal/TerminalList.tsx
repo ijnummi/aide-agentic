@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Terminal, Plus, X } from 'lucide-react';
 import { useTerminalStore } from '../../stores/terminal.store';
 import { useLayoutStore } from '../../stores/layout.store';
@@ -17,9 +18,12 @@ export function TerminalList({ cwd }: TerminalListProps) {
   const focusOrAddTab = useLayoutStore((s) => s.focusOrAddTab);
   const activePaneId = useLayoutStore((s) => s.activePaneId);
 
-  const list = Array.from(terminals.values())
-    .filter((t) => t.cwd === cwd)
-    .sort((a, b) => a.createdAt - b.createdAt);
+  const list = useMemo(
+    () => Array.from(terminals.values())
+      .filter((t) => t.cwd === cwd)
+      .sort((a, b) => a.createdAt - b.createdAt),
+    [terminals, cwd],
+  );
 
   const handleNew = async () => {
     const id = await createTerminal(cwd);

@@ -16,6 +16,7 @@ import { registerTerminalExitListener } from '../../hooks/useTerminal';
 import { getApi } from '../../lib/ipc';
 import { claudeName } from '../../lib/names';
 import { ensurePrimaryClaudeTab, bootstrapFresh } from '../../lib/workspace';
+import { useGitStore } from '../../stores/git.store';
 import type { TabItem } from '../../../shared/types/layout';
 
 export function AppShell() {
@@ -40,6 +41,10 @@ export function AppShell() {
   useGit(cwd);
   useWorktree(cwd);
 
+  const insertTabAt = useLayoutStore((s) => s.insertTabAt);
+  const setActiveTab = useLayoutStore((s) => s.setActiveTab);
+  const getDiff = useGitStore((s) => s.getDiff);
+
   const handleNewClaudeSession = useCallback(() => {
     if (!cwd) return;
     const sessionId = startSession(cwd);
@@ -52,7 +57,24 @@ export function AppShell() {
     addTab(activePaneId, tab);
   }, [cwd, startSession, addTab, activePaneId]);
 
-  useKeyboard({ cwd, onNewClaudeSession: handleNewClaudeSession });
+  const handleOpenAllChanges = useCallback(async () => {
+    const [stagedFiles, unstagedFiles] = await Promise.all([
+      getDiff(true),
+      getDiff(false),
+    ]);
+    const allFiles = [...stagedFiles, ...unstagedFiles];
+    useLayoutStore.getState().removeTabById('diff-all-changes');
+    const tab: TabItem = {
+      id: 'diff-all-changes',
+      type: 'diff',
+      title: 'All Changes',
+      metadata: { diffFiles: allFiles },
+    };
+    insertTabAt(activePaneId, tab, 3);
+    setActiveTab(activePaneId, tab.id);
+  }, [getDiff, insertTabAt, setActiveTab, activePaneId]);
+
+  useKeyboard({ cwd, onNewClaudeSession: handleNewClaudeSession, onOpenAllChanges: handleOpenAllChanges });
 
   useEffect(() => {
     getApi()

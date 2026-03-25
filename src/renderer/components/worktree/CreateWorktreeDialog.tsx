@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useWorktreeStore } from '../../stores/worktree.store';
+import { baseName } from '../../lib/path';
 
 interface CreateWorktreeDialogProps {
   onClose: () => void;
@@ -11,7 +12,7 @@ export function CreateWorktreeDialog({ onClose }: CreateWorktreeDialogProps) {
   const add = useWorktreeStore((s) => s.add);
   const cwd = useWorktreeStore((s) => s.cwd);
 
-  const projectName = cwd.split('/').filter(Boolean).pop() ?? 'project';
+  const projectName = baseName(cwd);
   const worktreePath = name.trim() ? `../${projectName}-${name.trim()}` : '';
   const branch = name.trim();
 

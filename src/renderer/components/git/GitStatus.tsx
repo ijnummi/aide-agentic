@@ -1,10 +1,18 @@
-import { GitBranch, RefreshCw, Plus, Minus, FileText } from 'lucide-react';
+import { GitBranch, RefreshCw, Plus, FileText, Diff } from 'lucide-react';
 import { useGitStore } from '../../stores/git.store';
+import { useUIStore } from '../../stores/ui.store';
 import { IconButton } from '../shared/IconButton';
+import { baseName } from '../../lib/path';
 import type { FileChange } from '../../../shared/types/git';
+
+function parentDir(filePath: string): string {
+  const idx = filePath.lastIndexOf('/');
+  return idx > 0 ? filePath.slice(0, idx) : '';
+}
 
 interface GitStatusProps {
   onOpenDiff?: (file: string, staged: boolean) => void;
+  onOpenAllChanges?: (scrollToFile?: string) => void;
 }
 
 const statusColors: Record<FileChange['status'], string> = {
@@ -25,7 +33,7 @@ const statusLetters: Record<FileChange['status'], string> = {
   untracked: '?',
 };
 
-export function GitStatus({ onOpenDiff }: GitStatusProps) {
+export function GitStatus({ onOpenDiff, onOpenAllChanges }: GitStatusProps) {
   const { branch, ahead, behind, staged, unstaged, untracked, isLoading, refresh, stage } =
     useGitStore();
 
@@ -61,6 +69,17 @@ export function GitStatus({ onOpenDiff }: GitStatusProps) {
         />
       </div>
 
+      {/* All changes button */}
+      {(staged.length > 0 || unstaged.length > 0) && (
+        <button
+          className="flex items-center gap-2 mx-1 px-2 py-1.5 rounded text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
+          onClick={() => onOpenAllChanges?.()}
+        >
+          <Diff size={14} />
+          <span>All Changes ({staged.length + unstaged.length})</span>
+        </button>
+      )}
+
       {/* Staged changes */}
       {staged.length > 0 && (
         <div>
@@ -71,7 +90,7 @@ export function GitStatus({ onOpenDiff }: GitStatusProps) {
             <FileRow
               key={file.path}
               file={file}
-              onClick={() => onOpenDiff?.(file.path, true)}
+              onClick={(e) => e.ctrlKey ? onOpenDiff?.(file.path, true) : onOpenAllChanges?.(file.path)}
             />
           ))}
         </div>
@@ -89,7 +108,7 @@ export function GitStatus({ onOpenDiff }: GitStatusProps) {
             <FileRow
               key={file.path}
               file={file}
-              onClick={() => onOpenDiff?.(file.path, false)}
+              onClick={(e) => e.ctrlKey ? onOpenDiff?.(file.path, false) : onOpenAllChanges?.(file.path)}
               onStage={() => handleStageFile(file.path)}
             />
           ))}
@@ -102,14 +121,18 @@ export function GitStatus({ onOpenDiff }: GitStatusProps) {
           <div className="flex items-center gap-1 px-1 py-0.5 text-[var(--text-muted)] uppercase tracking-wider">
             Untracked ({untracked.length})
           </div>
-          {untracked.map((path) => (
+          {untracked.map((filePath) => (
             <div
-              key={path}
+              key={filePath}
               className="flex items-center gap-1.5 px-2 py-0.5 hover:bg-[var(--bg-surface)] rounded cursor-pointer"
-              onClick={() => handleStageFile(path)}
+              onClick={() => handleStageFile(filePath)}
+              title={filePath}
             >
-              <FileText size={16} className="text-[var(--text-muted)]" />
-              <span className="truncate flex-1">{path}</span>
+              <FileText size={16} className="text-[var(--text-muted)] flex-shrink-0" />
+              <span className="truncate flex-1">
+                {baseName(filePath)}
+                {parentDir(filePath) && <span className="text-[10px] text-[var(--text-muted)] ml-1.5">{parentDir(filePath)}</span>}
+              </span>
               <span style={{ color: 'var(--text-muted)' }}>?</span>
             </div>
           ))}
@@ -131,16 +154,28 @@ function FileRow({
   onStage,
 }: {
   file: FileChange;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   onStage?: () => void;
 }) {
+  const fileName = baseName(file.path);
+  const dir = parentDir(file.path);
+  const visibleDiffFile = useUIStore((s) => s.visibleDiffFile);
+  const isVisible = visibleDiffFile === file.path;
+
   return (
     <div
-      className="flex items-center gap-2 px-2 py-1 hover:bg-[var(--bg-surface)] rounded cursor-pointer group"
+      className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer group ${
+        isVisible ? '' : 'hover:bg-[var(--bg-surface)]'
+      }`}
+      style={isVisible ? { backgroundColor: 'rgba(137, 180, 250, 0.12)' } : undefined}
       onClick={onClick}
+      title={file.path}
     >
-      <FileText size={16} style={{ color: statusColors[file.status] }} />
-      <span className="truncate flex-1">{file.path}</span>
+      <FileText size={16} style={{ color: statusColors[file.status] }} className="flex-shrink-0" />
+      <span className="truncate flex-1">
+        {fileName}
+        {dir && <span className="text-[10px] text-[var(--text-muted)] ml-1.5">{dir}</span>}
+      </span>
       {onStage && (
         <span
           className="opacity-0 group-hover:opacity-100"
