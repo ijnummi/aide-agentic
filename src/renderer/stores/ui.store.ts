@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getSettings } from './settings.store';
 
-export type SidebarPanel = 'home' | 'terminals' | 'claude-sessions' | 'git' | 'worktrees' | 'github';
+export type SidebarPanel = 'home' | 'docs' | 'git' | 'worktrees' | 'github';
 
 interface UIStore {
   sidebarVisible: boolean;

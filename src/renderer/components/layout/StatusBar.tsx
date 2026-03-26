@@ -5,7 +5,7 @@ import { useGitStore } from '../../stores/git.store';
 import { useUIStore } from '../../stores/ui.store';
 import { useWorktreeStore } from '../../stores/worktree.store';
 import { useWorkspaceStore } from '../../stores/workspace.store';
-import { switchWorkspace } from '../../lib/workspace';
+import { switchWorkspace, cleanupWorktreeTerminals } from '../../lib/workspace';
 import { WorktreeSelector } from '../worktree/WorktreeSelector';
 
 export function StatusBar() {
@@ -44,8 +44,10 @@ export function StatusBar() {
     if (!mainWorktree) return;
     setBusy(true);
     try {
+      const deletedPath = currentWorktree.path;
       await switchWorkspace(mainWorktree.path);
-      await removeWorktree(currentWorktree.path);
+      cleanupWorktreeTerminals(deletedPath);
+      await removeWorktree(deletedPath);
     } finally {
       setBusy(false);
     }

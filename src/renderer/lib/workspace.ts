@@ -4,7 +4,7 @@ import { useWorkspaceStore } from '../stores/workspace.store';
 import { useLayoutStore } from '../stores/layout.store';
 import { useTerminalStore } from '../stores/terminal.store';
 import { useClaudeStore } from '../stores/claude.store';
-import { writeTerminalScrollback } from '../hooks/useTerminal';
+import { writeTerminalScrollback, disposeTerminal } from '../hooks/useTerminal';
 import type { LayoutTree, PaneLeaf, TabItem } from '../../shared/types/layout';
 
 interface LayoutSnapshot {
@@ -160,4 +160,31 @@ export async function switchWorkspace(newPath: string) {
   } else if (!(await restoreFromDisk(newPath))) {
     await bootstrapFresh(newPath);
   }
+}
+
+/**
+ * Clean up all terminals and claude sessions associated with a worktree path.
+ * Call before or after removing the worktree from git.
+ */
+export function cleanupWorktreeTerminals(worktreePath: string) {
+  const terminalStore = useTerminalStore.getState();
+  const claudeStore = useClaudeStore.getState();
+
+  // Kill all terminals (including claude PTYs) whose cwd matches the worktree
+  for (const [id, terminal] of terminalStore.terminals) {
+    if (terminal.cwd === worktreePath) {
+      disposeTerminal(id);
+      terminalStore.killTerminal(id);
+    }
+  }
+
+  // Remove claude sessions for this worktree
+  for (const [id, session] of claudeStore.sessions) {
+    if (session.cwd === worktreePath) {
+      claudeStore.removeSession(id);
+    }
+  }
+
+  // Evict cached layout for this worktree
+  layoutCache.delete(worktreePath);
 }

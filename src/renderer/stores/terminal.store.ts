@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { TerminalInstance } from '../../shared/types/terminal';
 import { getApi } from '../lib/ipc';
 import { terminalName } from '../lib/names';
-import { getSettings } from './settings.store';
+
 
 interface TerminalStore {
   terminals: Map<string, TerminalInstance>;
@@ -25,12 +25,6 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     // Pass undefined shell to let the main process detect it; never pass "default"
     const actualShell = (shell && shell !== 'default') ? shell : undefined;
     const response = await getApi().pty.create({ id, cwd, shell: actualShell, cols, rows });
-
-    // Ensure terminal is in the correct directory after shell init
-    setTimeout(() => {
-      const quoted = cwd.includes("'") ? `"${cwd}"` : `'${cwd}'`;
-      getApi().pty.write({ id, data: `cd ${quoted} && clear\r` });
-    }, getSettings().timing.terminalInitDelay);
 
     const terminal: TerminalInstance = {
       id,

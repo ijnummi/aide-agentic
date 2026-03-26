@@ -1,4 +1,4 @@
-import { Terminal, Bot, GitCompare, GitPullRequest } from 'lucide-react';
+import { Terminal, Bot, GitCompare, GitPullRequest, FileText } from 'lucide-react';
 import { useTabSwitcherStore } from '../../stores/tabswitcher.store';
 import type { TabType } from '../../../shared/types/layout';
 
@@ -9,6 +9,7 @@ const tabIcons: Record<TabType, typeof Terminal> = {
   pr: GitPullRequest,
   worktrees: GitCompare,
   'git-status': GitCompare,
+  document: FileText,
 };
 
 export function TabSwitcher() {

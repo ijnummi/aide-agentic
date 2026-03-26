@@ -36,7 +36,7 @@ export function HomePanel({ cwd }: HomePanelProps) {
   const activePaneId = useLayoutStore((s) => s.activePaneId);
   const { startSession } = useClaude();
 
-  const terminalList = Array.from(terminals.values()).filter((t) => t.cwd === projectPath);
+  const terminalList = Array.from(terminals.values()).filter((t) => t.cwd === projectPath && t.shell !== 'claude');
   const claudeList = Array.from(claudeSessions.values()).filter((s) => s.cwd === projectPath);
   const totalChanges = gitStaged.length + gitUnstaged.length + gitUntracked.length;
 

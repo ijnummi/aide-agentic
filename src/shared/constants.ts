@@ -47,6 +47,10 @@ export const IPC = {
   SESSION_LOAD: 'session:load',
   SESSION_LIST: 'session:list',
 
+  // Docs
+  DOCS_DISCOVER: 'docs:discover',
+  DOCS_READ: 'docs:read',
+
   // Shell
   SHELL_INFO: 'shell:info',
   OPEN_EXTERNAL: 'shell:open-external',

@@ -20,7 +20,7 @@ export function TerminalList({ cwd }: TerminalListProps) {
 
   const list = useMemo(
     () => Array.from(terminals.values())
-      .filter((t) => t.cwd === cwd)
+      .filter((t) => t.cwd === cwd && t.shell !== 'claude')
       .sort((a, b) => a.createdAt - b.createdAt),
     [terminals, cwd],
   );

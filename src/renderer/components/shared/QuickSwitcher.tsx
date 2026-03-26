@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Terminal, Bot, GitCompare, GitPullRequest, GitFork } from 'lucide-react';
+import { Search, Terminal, Bot, GitCompare, GitPullRequest, GitFork, FileText } from 'lucide-react';
 import { useLayoutStore, findPane } from '../../stores/layout.store';
 import { useWorktreeStore } from '../../stores/worktree.store';
 import { useWorkspaceStore } from '../../stores/workspace.store';
@@ -14,6 +14,7 @@ const tabIcons: Record<TabType, typeof Terminal> = {
   pr: GitPullRequest,
   worktrees: GitCompare,
   'git-status': GitCompare,
+  document: FileText,
 };
 
 interface QuickSwitcherItem {

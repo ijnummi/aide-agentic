@@ -66,6 +66,14 @@ export interface AideSettings {
     contextWindowSize: number;  // tokens — default context window for % display
   };
 
+  /** Docs discovery */
+  docs: {
+    skillsDir: string;             // project-level skills directory
+    instructionFiles: string[];    // CLAUDE.md-style instruction files
+    documentationFiles: string[];  // README, CONTRIBUTING, etc.
+    taskFiles: string[];           // TODO, ROADMAP, etc.
+  };
+
   /** Timing */
   timing: {
     autoSaveInterval: number;       // ms
@@ -189,6 +197,13 @@ export const DEFAULT_SETTINGS: AideSettings = {
 
   claude: {
     contextWindowSize: 200_000,
+  },
+
+  docs: {
+    skillsDir: '.claude/commands',
+    instructionFiles: ['CLAUDE.md', '.claude/CLAUDE.md'],
+    documentationFiles: ['README.md', 'CONTRIBUTING.md', 'ARCHITECTURE.md', 'CHANGELOG.md'],
+    taskFiles: ['TODO.md', 'ROADMAP.md'],
   },
 
   timing: {

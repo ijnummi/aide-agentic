@@ -6,8 +6,10 @@ import { TerminalToolbar } from '../terminal/TerminalToolbar';
 import { ClaudePanel } from '../claude/ClaudePanel';
 import { DiffViewer } from '../review/DiffViewer';
 import { PRDetail } from '../review/PRDetail';
+import { DocumentViewer } from '../docs/DocumentViewer';
 import { useLayoutStore } from '../../stores/layout.store';
 import { useTerminalStore } from '../../stores/terminal.store';
+import { useClaudeStore } from '../../stores/claude.store';
 import { useGitHubStore } from '../../stores/github.store';
 import { disposeTerminal, getTerminalCache } from '../../hooks/useTerminal';
 import { getSettings } from '../../stores/settings.store';
@@ -22,6 +24,7 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
   const { setActiveTab, removeTab, addTab, splitPane, setActivePane, activePaneId } = useLayoutStore();
   const createTerminal = useTerminalStore((s) => s.createTerminal);
   const killTerminal = useTerminalStore((s) => s.killTerminal);
+  const removeSession = useClaudeStore((s) => s.removeSession);
   const selectPR = useGitHubStore((s) => s.selectPR);
   const activeTab = pane.tabs.find((t) => t.id === pane.activeTabId);
   const isActivePane = pane.id === activePaneId;
@@ -41,9 +44,17 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
     (tabId: string) => {
       const tab = pane.tabs.find((t) => t.id === tabId);
       if (tab?.metadata?.isPrimary) return;
+      // Kill the underlying terminal/claude PTY when tab is closed
+      if (tab?.type === 'terminal' || tab?.type === 'claude') {
+        disposeTerminal(tabId);
+        killTerminal(tabId);
+      }
+      if (tab?.type === 'claude') {
+        removeSession(tabId);
+      }
       removeTab(pane.id, tabId);
     },
-    [pane.id, pane.tabs, removeTab],
+    [pane.id, pane.tabs, removeTab, killTerminal, removeSession],
   );
 
   const handleSelectTab = useCallback(
@@ -140,7 +151,13 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
         {activeTab?.type === 'pr' && (
           <PRDetailLoader cwd={cwd} prNumber={activeTab.metadata.prNumber as number} selectPR={selectPR} />
         )}
-        {activeTab && !['terminal', 'claude', 'diff', 'pr'].includes(activeTab.type) && (
+        {activeTab?.type === 'document' && (
+          <DocumentViewer
+            filePath={activeTab.metadata.filePath as string}
+            relativePath={activeTab.metadata.relativePath as string}
+          />
+        )}
+        {activeTab && !['terminal', 'claude', 'diff', 'pr', 'document'].includes(activeTab.type) && (
           <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
             {activeTab.type} panel (coming soon)
           </div>

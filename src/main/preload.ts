@@ -35,6 +35,12 @@ import type {
   GitHubPRCommentRequest,
 } from '../shared/types/github';
 import type { SessionState, SessionMeta } from '../shared/types/persistence';
+import type {
+  DocsDiscoverRequest,
+  DocsDiscoverResponse,
+  DocsReadRequest,
+  DocsReadResponse,
+} from '../shared/types/docs';
 
 contextBridge.exposeInMainWorld('aide', {
   pty: {
@@ -179,6 +185,15 @@ contextBridge.exposeInMainWorld('aide', {
     },
     isMaximized(): Promise<boolean> {
       return ipcRenderer.invoke('window:isMaximized');
+    },
+  },
+
+  docs: {
+    discover(req: DocsDiscoverRequest): Promise<DocsDiscoverResponse> {
+      return ipcRenderer.invoke(IPC.DOCS_DISCOVER, req);
+    },
+    readFile(req: DocsReadRequest): Promise<DocsReadResponse> {
+      return ipcRenderer.invoke(IPC.DOCS_READ, req);
     },
   },
 

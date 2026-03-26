@@ -33,6 +33,12 @@ import type {
   GitHubPRCommentRequest,
 } from '../../shared/types/github';
 import type { SessionState, SessionMeta } from '../../shared/types/persistence';
+import type {
+  DocsDiscoverRequest,
+  DocsDiscoverResponse,
+  DocsReadRequest,
+  DocsReadResponse,
+} from '../../shared/types/docs';
 
 export interface AideAPI {
   pty: {
@@ -86,6 +92,10 @@ export interface AideAPI {
     maximize(): Promise<void>;
     close(): Promise<void>;
     isMaximized(): Promise<boolean>;
+  };
+  docs: {
+    discover(req: DocsDiscoverRequest): Promise<DocsDiscoverResponse>;
+    readFile(req: DocsReadRequest): Promise<DocsReadResponse>;
   };
   shell: {
     info(): Promise<ShellInfo>;

@@ -4,6 +4,7 @@ import { useWorktreeStore } from '../../stores/worktree.store';
 import { WorktreeCard } from './WorktreeCard';
 import { CreateWorktreeDialog } from './CreateWorktreeDialog';
 import { IconButton } from '../shared/IconButton';
+import { cleanupWorktreeTerminals } from '../../lib/workspace';
 
 export function WorktreeList() {
   const { worktrees, isLoading, refresh, remove } = useWorktreeStore();
@@ -11,6 +12,7 @@ export function WorktreeList() {
 
   const handleRemove = async (path: string) => {
     try {
+      cleanupWorktreeTerminals(path);
       await remove(path);
     } catch {
       // Could show error toast

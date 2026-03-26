@@ -7,6 +7,7 @@ import { GitService } from './services/git.service';
 import { WorktreeService } from './services/worktree.service';
 import { GitHubService } from './services/github.service';
 import { PersistenceService } from './services/persistence.service';
+import { DocsService } from './services/docs.service';
 import { ClaudeWatcherService } from './services/claude-watcher.service';
 import Store from 'electron-store';
 import { registerAllHandlers } from './ipc/index';
@@ -26,6 +27,7 @@ const gitService = new GitService();
 const worktreeService = new WorktreeService();
 const githubService = new GitHubService();
 const persistenceService = new PersistenceService();
+const docsService = new DocsService();
 const claudeWatcher = new ClaudeWatcherService();
 const windowStore = new Store<{ bounds: { x: number; y: number; width: number; height: number }; maximized: boolean }>({
   name: 'aide-window',
@@ -137,7 +139,7 @@ ipcMain.handle(IPC.CLAUDE_UNWATCH, (_event, sessionId: string) => {
 });
 
 // Register IPC handlers
-registerAllHandlers(ptyService, claudeService, gitService, worktreeService, githubService, persistenceService, getWindow);
+registerAllHandlers(ptyService, claudeService, gitService, worktreeService, githubService, persistenceService, docsService, getWindow);
 
 app.on('ready', createWindow);
 

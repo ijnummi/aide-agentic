@@ -141,16 +141,6 @@ export function App() {
         action: () => setSidebarPanel('home'),
       },
       {
-        id: 'show-terminals',
-        label: 'Show: Terminals',
-        action: () => setSidebarPanel('terminals'),
-      },
-      {
-        id: 'show-claude',
-        label: 'Show: Claude Sessions',
-        action: () => setSidebarPanel('claude-sessions'),
-      },
-      {
         id: 'show-git',
         label: 'Show: Git',
         action: () => setSidebarPanel('git'),
