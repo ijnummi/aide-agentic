@@ -50,6 +50,7 @@ export const IPC = {
   // Docs
   DOCS_DISCOVER: 'docs:discover',
   DOCS_READ: 'docs:read',
+  DOCS_WRITE: 'docs:write',
 
   // Shell
   SHELL_INFO: 'shell:info',

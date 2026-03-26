@@ -36,6 +36,10 @@ export class DocsService {
     return { content, format };
   }
 
+  async writeFile(filePath: string, content: string): Promise<void> {
+    await fs.writeFile(filePath, content, 'utf-8');
+  }
+
   private async scanDir(
     cwd: string,
     relDir: string,

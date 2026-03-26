@@ -130,12 +130,6 @@ export function App() {
         action: handleNewClaude,
       },
       {
-        id: 'save-session',
-        label: 'Save Session',
-        shortcut: 'Ctrl+S',
-        action: save,
-      },
-      {
         id: 'show-home',
         label: 'Show: Home',
         action: () => setSidebarPanel('home'),
@@ -156,7 +150,7 @@ export function App() {
         action: () => setSidebarPanel('github'),
       },
     ],
-    [theme, setTheme, toggleSidebar, setSidebarPanel, handleNewTerminal, handleNewClaude, save],
+    [theme, setTheme, toggleSidebar, setSidebarPanel, handleNewTerminal, handleNewClaude],
   );
 
   return (

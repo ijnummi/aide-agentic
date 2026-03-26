@@ -38,6 +38,7 @@ import type {
   DocsDiscoverResponse,
   DocsReadRequest,
   DocsReadResponse,
+  DocsWriteRequest,
 } from '../../shared/types/docs';
 
 export interface AideAPI {
@@ -96,6 +97,7 @@ export interface AideAPI {
   docs: {
     discover(req: DocsDiscoverRequest): Promise<DocsDiscoverResponse>;
     readFile(req: DocsReadRequest): Promise<DocsReadResponse>;
+    writeFile(req: DocsWriteRequest): Promise<void>;
   };
   shell: {
     info(): Promise<ShellInfo>;

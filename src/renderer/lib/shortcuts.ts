@@ -10,7 +10,6 @@ export interface ShortcutEntry {
 export const SHORTCUTS: ShortcutEntry[] = [
   // General
   { id: 'toggle-sidebar',   label: 'Toggle Sidebar',            shortcut: 'Ctrl+B',         category: 'General' },
-  { id: 'save-session',     label: 'Save Session',              shortcut: 'Ctrl+S',         category: 'General' },
   { id: 'quick-switcher',   label: 'Quick Switcher',            shortcut: 'Ctrl+P',         category: 'General' },
   { id: 'command-palette',  label: 'Command Palette',           shortcut: 'Ctrl+Shift+P',   category: 'General' },
   { id: 'show-shortcuts',   label: 'Keyboard Shortcuts',        shortcut: '?',               category: 'General' },

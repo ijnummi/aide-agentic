@@ -27,3 +27,8 @@ export interface DocsReadResponse {
   content: string;
   format: 'markdown' | 'text';
 }
+
+export interface DocsWriteRequest {
+  filePath: string;
+  content: string;
+}

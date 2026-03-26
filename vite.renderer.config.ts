@@ -11,4 +11,10 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, 'src/shared'),
     },
   },
+  server: {
+    watch: {
+      // Only trigger HMR for source code — ignore everything outside src/
+      ignored: (filePath: string) => !filePath.includes('/src/'),
+    },
+  },
 });

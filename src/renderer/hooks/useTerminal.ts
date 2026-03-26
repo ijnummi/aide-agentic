@@ -66,8 +66,6 @@ export function useTerminal({ terminalId }: UseTerminalOptions) {
         if (e.ctrlKey && e.shiftKey && e.key === 'P') return false;
         // Ctrl+B — toggle sidebar
         if (e.ctrlKey && !e.shiftKey && e.key === 'b') return false;
-        // Ctrl+S — save session
-        if (e.ctrlKey && !e.shiftKey && e.key === 's') return false;
         // Ctrl+T — new terminal
         if (e.ctrlKey && !e.shiftKey && e.key === 't') return false;
         // Ctrl+Shift+C — new Claude session

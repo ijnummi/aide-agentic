@@ -40,6 +40,7 @@ import type {
   DocsDiscoverResponse,
   DocsReadRequest,
   DocsReadResponse,
+  DocsWriteRequest,
 } from '../shared/types/docs';
 
 contextBridge.exposeInMainWorld('aide', {
@@ -194,6 +195,9 @@ contextBridge.exposeInMainWorld('aide', {
     },
     readFile(req: DocsReadRequest): Promise<DocsReadResponse> {
       return ipcRenderer.invoke(IPC.DOCS_READ, req);
+    },
+    writeFile(req: DocsWriteRequest): Promise<void> {
+      return ipcRenderer.invoke(IPC.DOCS_WRITE, req);
     },
   },
 

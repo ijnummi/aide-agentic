@@ -3,7 +3,6 @@ import { useLayoutStore } from '../stores/layout.store';
 import { useUIStore } from '../stores/ui.store';
 import { useTerminalStore } from '../stores/terminal.store';
 import { useTabSwitcherStore } from '../stores/tabswitcher.store';
-import { usePersistence } from './usePersistence';
 import { getTerminalCache } from './useTerminal';
 import { getSettings } from '../stores/settings.store';
 import { useWorktreeStore } from '../stores/worktree.store';
@@ -83,7 +82,6 @@ export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKe
   const initialized = useLayoutStore((s) => s.initialized);
   const createTerminal = useTerminalStore((s) => s.createTerminal);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
-  const { save } = usePersistence();
 
   const tabSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabSwitchActiveRef = useRef(false);
@@ -91,6 +89,9 @@ export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKe
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (!cwd || !initialized) return;
+
+      // Skip when focus is inside a Monaco editor — let it handle its own keybindings
+      if ((e.target as HTMLElement)?.closest?.('.monaco-editor')) return;
 
       // Ctrl+Tab / Ctrl+Shift+Tab — tab switching
       if (e.ctrlKey && e.key === 'Tab') {
@@ -217,12 +218,7 @@ export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKe
         return;
       }
 
-      // Ctrl+S — save session
-      if (e.ctrlKey && !e.shiftKey && e.key === 's') {
-        e.preventDefault();
-        await save();
-        return;
-      }
+
 
       // Ctrl+\ — split horizontal
       if (e.ctrlKey && !e.shiftKey && e.code === 'Backslash') {
@@ -300,5 +296,5 @@ export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKe
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp, true);
     };
-  }, [cwd, initialized, activePaneId, addTab, splitPane, setActiveTab, createTerminal, toggleSidebar, save, onNewClaudeSession]);
+  }, [cwd, initialized, activePaneId, addTab, splitPane, setActiveTab, createTerminal, toggleSidebar, onNewClaudeSession]);
 }

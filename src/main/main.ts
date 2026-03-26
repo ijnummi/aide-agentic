@@ -21,6 +21,10 @@ if (started) {
 
 app.commandLine.appendSwitch('disable-smooth-scrolling');
 
+if (!process.env.XCURSOR_SIZE) {
+  process.env.XCURSOR_SIZE = '24';
+}
+
 const ptyService = new PtyService();
 const claudeService = new ClaudeService();
 const gitService = new GitService();

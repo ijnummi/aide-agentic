@@ -76,3 +76,23 @@ body,
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Override github-markdown-css to match app theme */
+.markdown-body {
+  --color-fg-default: var(--text-primary);
+  --color-fg-muted: var(--text-secondary);
+  --color-fg-subtle: var(--text-muted);
+  --color-canvas-default: transparent;
+  --color-canvas-subtle: var(--bg-secondary);
+  --color-border-default: var(--border);
+  --color-border-muted: var(--border);
+  --color-accent-fg: var(--accent);
+  --color-danger-fg: var(--error);
+  --color-success-fg: var(--success);
+  --color-attention-fg: var(--warning);
+  --color-neutral-muted: var(--bg-surface);
+}
+
+/* Restore list styles stripped by global * { margin:0; padding:0 } reset */
+.markdown-body ul { list-style-type: disc; }
+.markdown-body ol { list-style-type: decimal; }

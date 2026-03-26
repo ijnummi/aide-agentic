@@ -6,6 +6,7 @@
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
+    "clean": "rm -rf .vite out",
     "dev": "electron-forge start",
     "start": "electron-forge start",
     "build": "electron-forge package",
@@ -30,6 +31,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@octokit/rest": "^22.0.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-search": "^0.15.0",
@@ -41,11 +43,15 @@
     "allotment": "^1.0.7",
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^10.0.0",
+    "github-markdown-css": "^5.9.0",
     "immer": "^10.1.0",
     "lucide-react": "^0.475.0",
+    "monaco-editor": "^0.55.1",
     "node-pty": "^1.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
