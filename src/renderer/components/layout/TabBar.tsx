@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Plus, X, Terminal, Bot, GitCompare, GitPullRequest, FileText } from 'lucide-react';
+import { Plus, X, Terminal, Bot, GitCompare, GitPullRequest, FileText, ClipboardList } from 'lucide-react';
 import { getTabNumbers } from '../../lib/tab-numbers';
 import type { TabItem, TabType } from '../../../shared/types/layout';
 
@@ -20,6 +20,7 @@ const tabIcons: Record<TabType, React.ComponentType<{ size?: number; className?:
   worktrees: GitCompare,
   'git-status': GitCompare,
   document: FileText,
+  'cr-spec': ClipboardList,
 };
 
 export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onNewTerminal, trailing }: TabBarProps) {

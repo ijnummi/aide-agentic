@@ -129,6 +129,21 @@ export class GitHubService {
     });
   }
 
+  async createPR(
+    cwd: string,
+    head: string,
+    base: string,
+    title: string,
+    body: string,
+  ): Promise<{ number: number; url: string }> {
+    if (!this.octokit) throw new Error('Not authenticated');
+    const { owner, repo } = await this.getRepo(cwd);
+    const { data } = await this.octokit.pulls.create({
+      owner, repo, head, base, title, body,
+    });
+    return { number: data.number, url: data.html_url };
+  }
+
   async addComment(cwd: string, number: number, body: string): Promise<void> {
     if (!this.octokit) throw new Error('Not authenticated');
     const { owner, repo } = await this.getRepo(cwd);

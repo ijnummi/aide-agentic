@@ -52,6 +52,17 @@ export const IPC = {
   DOCS_READ: 'docs:read',
   DOCS_WRITE: 'docs:write',
 
+  // Change Requests
+  CR_LIST: 'cr:list',
+  CR_GET: 'cr:get',
+  CR_CREATE: 'cr:create',
+  CR_READ_SPEC: 'cr:read-spec',
+  CR_WRITE_SPEC: 'cr:write-spec',
+  CR_START: 'cr:start',
+  CR_STOP: 'cr:stop',
+  CR_APPROVE: 'cr:approve',
+  CR_DISCARD: 'cr:discard',
+
   // Shell
   SHELL_INFO: 'shell:info',
   OPEN_EXTERNAL: 'shell:open-external',

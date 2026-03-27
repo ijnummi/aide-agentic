@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import Editor, { type OnMount, type Monaco } from '@monaco-editor/react';
+import Editor, { type OnMount } from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import 'github-markdown-css/github-markdown-dark.css';
 import { getApi } from '../../lib/ipc';
+import { useGitStore } from '../../stores/git.store';
+import { useDocPreviewStore } from '../../stores/docpreview.store';
 import { baseName } from '../../lib/path';
 import type { editor } from 'monaco-editor';
 
@@ -34,20 +36,23 @@ function languageFromPath(filePath: string): string {
 }
 
 export function DocumentViewer({ filePath, relativePath }: DocumentViewerProps) {
+  const tabId = `doc:${relativePath}`;
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState(false);
   const [dirty, setDirty] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const savedContentRef = useRef<string>('');
   const saveRef = useRef<() => Promise<void>>(undefined);
   const isMarkdown = filePath.endsWith('.md');
 
+  // Preview state from shared store — survives unmount and can be toggled by useKeyboard
+  const preview = useDocPreviewStore((s) => s.previews.get(tabId) ?? false);
+  const togglePreview = useDocPreviewStore((s) => s.toggle);
+
   useEffect(() => {
     setContent(null);
     setError(null);
     setDirty(false);
-    setPreview(false);
     getApi()
       .docs.readFile({ filePath })
       .then((res) => {
@@ -57,23 +62,25 @@ export function DocumentViewer({ filePath, relativePath }: DocumentViewerProps) 
       .catch((err) => setError(err?.message || 'Failed to read file'));
   }, [filePath]);
 
+  const gitRefresh = useGitStore((s) => s.refresh);
+
   const handleSave = useCallback(async () => {
     if (content === null) return;
     try {
       await getApi().docs.writeFile({ filePath, content });
       savedContentRef.current = content;
       setDirty(false);
+      gitRefresh();
     } catch (err: any) {
       setError(err?.message || 'Failed to save');
     }
-  }, [filePath, content]);
+  }, [filePath, content, gitRefresh]);
 
   saveRef.current = handleSave;
 
   const handleEditorMount: OnMount = useCallback((ed, monaco) => {
     editorRef.current = ed;
 
-    // Ctrl+S — save file
     ed.addAction({
       id: 'aide.saveFile',
       label: 'Save File',
@@ -81,14 +88,15 @@ export function DocumentViewer({ filePath, relativePath }: DocumentViewerProps) 
       run: () => { saveRef.current?.(); },
     });
 
-    // Ctrl+Shift+V — toggle markdown preview
     ed.addAction({
       id: 'aide.togglePreview',
       label: 'Toggle Markdown Preview',
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyV],
-      run: () => { setPreview((p) => !p); },
+      run: () => { togglePreview(tabId); },
     });
-  }, []);
+
+    ed.focus();
+  }, [tabId, togglePreview]);
 
   const handleChange = useCallback((value: string | undefined) => {
     if (value !== undefined) {
@@ -96,18 +104,6 @@ export function DocumentViewer({ filePath, relativePath }: DocumentViewerProps) 
       setDirty(value !== savedContentRef.current);
     }
   }, []);
-
-  // Preview-mode keyboard handler (no Monaco editor to catch keys)
-  const handlePreviewKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.ctrlKey && !e.shiftKey && e.key === 's') {
-      e.preventDefault();
-      saveRef.current?.();
-    }
-    if (e.ctrlKey && e.shiftKey && e.key === 'V' && isMarkdown) {
-      e.preventDefault();
-      setPreview((p) => !p);
-    }
-  }, [isMarkdown]);
 
   return (
     <div className="flex flex-col h-full">
@@ -135,7 +131,7 @@ export function DocumentViewer({ filePath, relativePath }: DocumentViewerProps) 
                 ? 'bg-[var(--accent)] text-[var(--bg-primary)]'
                 : 'bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
-            onClick={() => setPreview((p) => !p)}
+            onClick={() => togglePreview(tabId)}
             title="Toggle markdown preview (Ctrl+Shift+V)"
           >
             {preview ? 'Preview' : 'Edit'}
@@ -175,11 +171,7 @@ export function DocumentViewer({ filePath, relativePath }: DocumentViewerProps) 
           />
         )}
         {content !== null && preview && (
-          <div
-            className="h-full overflow-auto"
-            tabIndex={0}
-            onKeyDown={handlePreviewKeyDown}
-          >
+          <div className="h-full overflow-auto">
             <div className="markdown-body !py-4 !px-4">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {content}

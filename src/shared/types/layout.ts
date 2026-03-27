@@ -1,4 +1,4 @@
-export type TabType = 'terminal' | 'claude' | 'diff' | 'pr' | 'worktrees' | 'git-status' | 'document';
+export type TabType = 'terminal' | 'claude' | 'diff' | 'pr' | 'worktrees' | 'git-status' | 'document' | 'cr-spec';
 
 export interface TabItem {
   id: string;

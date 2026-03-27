@@ -74,6 +74,12 @@ export interface AideSettings {
     taskFiles: string[];           // TODO, ROADMAP, etc.
   };
 
+  /** Change requests */
+  changeRequests: {
+    storageDir: string;      // relative to project root
+    specFileName: string;
+  };
+
   /** Timing */
   timing: {
     autoSaveInterval: number;       // ms
@@ -204,6 +210,11 @@ export const DEFAULT_SETTINGS: AideSettings = {
     instructionFiles: ['CLAUDE.md', '.claude/CLAUDE.md'],
     documentationFiles: ['README.md', 'CONTRIBUTING.md', 'ARCHITECTURE.md', 'CHANGELOG.md'],
     taskFiles: ['TODO.md', 'ROADMAP.md'],
+  },
+
+  changeRequests: {
+    storageDir: '.aide/change-requests',
+    specFileName: 'spec.md',
   },
 
   timing: {

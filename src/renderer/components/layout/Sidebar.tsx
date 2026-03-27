@@ -7,6 +7,7 @@ import { BranchSelector } from '../git/BranchSelector';
 import { CommitPanel } from '../git/CommitPanel';
 import { WorktreeList } from '../worktree/WorktreeList';
 import { DocsPanel } from '../docs/DocsPanel';
+import { CRPanel } from '../change-requests/CRPanel';
 import { HomePanel } from './HomePanel';
 import { PRList } from '../review/PRList';
 import { useGitHubStore } from '../../stores/github.store';
@@ -16,6 +17,7 @@ import type { TabItem } from '../../../shared/types/layout';
 
 const panelTitles: Record<string, string> = {
   home: 'Home',
+  'change-requests': 'Change Requests',
   docs: 'Definitions',
   git: 'Git',
   worktrees: 'Worktrees',
@@ -78,6 +80,9 @@ export function Sidebar() {
         {activeSidebarPanel === 'home' && cwd && (
           <HomePanel cwd={cwd} />
         )}
+        {activeSidebarPanel === 'change-requests' && (
+          <CRPanel />
+        )}
         {activeSidebarPanel === 'docs' && cwd && (
           <DocsPanel cwd={cwd} />
         )}
@@ -107,7 +112,7 @@ export function Sidebar() {
             }}
           />
         )}
-        {!['home', 'docs', 'git', 'worktrees', 'github'].includes(activeSidebarPanel) && (
+        {!['home', 'change-requests', 'docs', 'git', 'worktrees', 'github'].includes(activeSidebarPanel) && (
           <div className="p-2 text-[var(--text-muted)] text-xs">
             {activeSidebarPanel} panel content coming soon
           </div>

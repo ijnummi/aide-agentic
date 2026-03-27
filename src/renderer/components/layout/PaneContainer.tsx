@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PaneLeaf, TabItem } from '../../../shared/types/layout';
 import { TabBar } from './TabBar';
 import { TerminalPanel } from '../terminal/TerminalPanel';
@@ -7,10 +7,12 @@ import { ClaudePanel } from '../claude/ClaudePanel';
 import { DiffViewer } from '../review/DiffViewer';
 import { PRDetail } from '../review/PRDetail';
 import { DocumentViewer } from '../docs/DocumentViewer';
+import { CRSpecViewer } from '../change-requests/CRSpecViewer';
 import { useLayoutStore } from '../../stores/layout.store';
 import { useTerminalStore } from '../../stores/terminal.store';
 import { useClaudeStore } from '../../stores/claude.store';
 import { useGitHubStore } from '../../stores/github.store';
+import { useGitStore } from '../../stores/git.store';
 import { disposeTerminal, getTerminalCache } from '../../hooks/useTerminal';
 import { getSettings } from '../../stores/settings.store';
 import type { DiffFile } from '../../../shared/types/git';
@@ -145,7 +147,10 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
             isActive={isActivePane}
           />
         )}
-        {activeTab?.type === 'diff' && (
+        {activeTab?.type === 'diff' && activeTab.id === 'diff-all-changes' && (
+          <AllChangesDiffLoader cwd={cwd} scrollToFile={activeTab.metadata.scrollToFile as string | undefined} />
+        )}
+        {activeTab?.type === 'diff' && activeTab.id !== 'diff-all-changes' && (
           <DiffViewer files={(activeTab.metadata.diffFiles as DiffFile[]) || []} scrollToFile={activeTab.metadata.scrollToFile as string | undefined} />
         )}
         {activeTab?.type === 'pr' && (
@@ -157,7 +162,10 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
             relativePath={activeTab.metadata.relativePath as string}
           />
         )}
-        {activeTab && !['terminal', 'claude', 'diff', 'pr', 'document'].includes(activeTab.type) && (
+        {activeTab?.type === 'cr-spec' && (
+          <CRSpecViewer crId={activeTab.metadata.crId as string} />
+        )}
+        {activeTab && !['terminal', 'claude', 'diff', 'pr', 'document', 'cr-spec'].includes(activeTab.type) && (
           <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
             {activeTab.type} panel (coming soon)
           </div>
@@ -176,6 +184,22 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
       </div>
     </div>
   );
+}
+
+function AllChangesDiffLoader({ cwd, scrollToFile }: { cwd: string; scrollToFile?: string }) {
+  const lastUpdated = useGitStore((s) => s.lastUpdated);
+  const getDiff = useGitStore((s) => s.getDiff);
+  const [files, setFiles] = useState<DiffFile[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getDiff(true), getDiff(false)]).then(([staged, unstaged]) => {
+      if (!cancelled) setFiles([...staged, ...unstaged]);
+    });
+    return () => { cancelled = true; };
+  }, [getDiff, lastUpdated]);
+
+  return <DiffViewer files={files} scrollToFile={scrollToFile} />;
 }
 
 function PRDetailLoader({ cwd, prNumber, selectPR }: { cwd: string; prNumber: number; selectPR: (cwd: string, n: number) => Promise<void> }) {

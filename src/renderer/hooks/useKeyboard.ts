@@ -9,6 +9,7 @@ import { useWorktreeStore } from '../stores/worktree.store';
 import { useWorkspaceStore } from '../stores/workspace.store';
 import { switchWorkspace, firstPane } from '../lib/workspace';
 import { findTabByNumber, ALL_CHANGES_TAB_ID, RESERVED_NUMBER } from '../lib/tab-numbers';
+import { useDocPreviewStore } from '../stores/docpreview.store';
 import type { TabItem, PaneLeaf, LayoutTree, LayoutNode } from '../../shared/types/layout';
 
 function findPaneById(node: LayoutTree, paneId: string): PaneLeaf | null {
@@ -90,8 +91,14 @@ export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKe
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (!cwd || !initialized) return;
 
-      // Skip when focus is inside a Monaco editor — let it handle its own keybindings
-      if ((e.target as HTMLElement)?.closest?.('.monaco-editor')) return;
+      // When focus is inside Monaco editor, only skip keys Monaco handles
+      // (plain typing, Ctrl+S, Ctrl+Shift+V). Let app shortcuts through.
+      if ((e.target as HTMLElement)?.closest?.('.monaco-editor')) {
+        const isCtrlS = e.ctrlKey && !e.shiftKey && e.code === 'KeyS';
+        const isCtrlShiftV = e.ctrlKey && e.shiftKey && e.code === 'KeyV';
+        if (!e.altKey && !e.ctrlKey && !e.metaKey) return; // plain typing
+        if (isCtrlS || isCtrlShiftV) return; // Monaco-handled shortcuts
+      }
 
       // Ctrl+Tab / Ctrl+Shift+Tab — tab switching
       if (e.ctrlKey && e.key === 'Tab') {
@@ -266,6 +273,20 @@ export function useKeyboard({ cwd, onNewClaudeSession, onOpenAllChanges }: UseKe
       if (e.ctrlKey && e.shiftKey && e.key === 'C') {
         e.preventDefault();
         onNewClaudeSession();
+        return;
+      }
+
+      // Ctrl+Shift+V — toggle markdown preview (document tabs)
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyV') {
+        const layoutState = useLayoutStore.getState();
+        if (layoutState.root) {
+          const pane = findPaneById(layoutState.root, layoutState.activePaneId);
+          const tab = pane?.tabs.find((t) => t.id === pane.activeTabId);
+          if (tab?.type === 'document') {
+            e.preventDefault();
+            useDocPreviewStore.getState().toggle(`doc:${tab.metadata.relativePath}`);
+          }
+        }
         return;
       }
     };

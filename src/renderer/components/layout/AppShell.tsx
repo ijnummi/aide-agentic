@@ -10,6 +10,7 @@ import { useClaude } from '../../hooks/useClaude';
 import { useGit } from '../../hooks/useGit';
 import { useWorktree } from '../../hooks/useWorktree';
 import { useDocs } from '../../hooks/useDocs';
+import { useChangeRequests } from '../../hooks/useChangeRequests';
 import { usePersistence } from '../../hooks/usePersistence';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { useWorkspaceStore } from '../../stores/workspace.store';
@@ -42,6 +43,7 @@ export function AppShell() {
   useGit(cwd);
   useWorktree(cwd);
   useDocs(cwd);
+  useChangeRequests();
 
   const insertTabAt = useLayoutStore((s) => s.insertTabAt);
   const setActiveTab = useLayoutStore((s) => s.setActiveTab);

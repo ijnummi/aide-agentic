@@ -42,6 +42,23 @@ import type {
   DocsReadResponse,
   DocsWriteRequest,
 } from '../shared/types/docs';
+import type {
+  CRListRequest,
+  CRListResponse,
+  CRGetRequest,
+  CRCreateRequest,
+  CRCreateResponse,
+  CRReadSpecRequest,
+  CRReadSpecResponse,
+  CRWriteSpecRequest,
+  CRStartRequest,
+  CRStartResponse,
+  CRStopRequest,
+  CRApproveRequest,
+  CRApproveResponse,
+  CRDiscardRequest,
+  ChangeRequest,
+} from '../shared/types/change-request';
 
 contextBridge.exposeInMainWorld('aide', {
   pty: {
@@ -198,6 +215,36 @@ contextBridge.exposeInMainWorld('aide', {
     },
     writeFile(req: DocsWriteRequest): Promise<void> {
       return ipcRenderer.invoke(IPC.DOCS_WRITE, req);
+    },
+  },
+
+  cr: {
+    list(req: CRListRequest): Promise<CRListResponse> {
+      return ipcRenderer.invoke(IPC.CR_LIST, req);
+    },
+    get(req: CRGetRequest): Promise<ChangeRequest | null> {
+      return ipcRenderer.invoke(IPC.CR_GET, req);
+    },
+    create(req: CRCreateRequest): Promise<CRCreateResponse> {
+      return ipcRenderer.invoke(IPC.CR_CREATE, req);
+    },
+    readSpec(req: CRReadSpecRequest): Promise<CRReadSpecResponse> {
+      return ipcRenderer.invoke(IPC.CR_READ_SPEC, req);
+    },
+    writeSpec(req: CRWriteSpecRequest): Promise<void> {
+      return ipcRenderer.invoke(IPC.CR_WRITE_SPEC, req);
+    },
+    start(req: CRStartRequest): Promise<CRStartResponse> {
+      return ipcRenderer.invoke(IPC.CR_START, req);
+    },
+    stop(req: CRStopRequest): Promise<void> {
+      return ipcRenderer.invoke(IPC.CR_STOP, req);
+    },
+    approve(req: CRApproveRequest): Promise<CRApproveResponse> {
+      return ipcRenderer.invoke(IPC.CR_APPROVE, req);
+    },
+    discard(req: CRDiscardRequest): Promise<void> {
+      return ipcRenderer.invoke(IPC.CR_DISCARD, req);
     },
   },
 

@@ -40,6 +40,23 @@ import type {
   DocsReadResponse,
   DocsWriteRequest,
 } from '../../shared/types/docs';
+import type {
+  CRListRequest,
+  CRListResponse,
+  CRGetRequest,
+  CRCreateRequest,
+  CRCreateResponse,
+  CRReadSpecRequest,
+  CRReadSpecResponse,
+  CRWriteSpecRequest,
+  CRStartRequest,
+  CRStartResponse,
+  CRStopRequest,
+  CRApproveRequest,
+  CRApproveResponse,
+  CRDiscardRequest,
+  ChangeRequest,
+} from '../../shared/types/change-request';
 
 export interface AideAPI {
   pty: {
@@ -98,6 +115,17 @@ export interface AideAPI {
     discover(req: DocsDiscoverRequest): Promise<DocsDiscoverResponse>;
     readFile(req: DocsReadRequest): Promise<DocsReadResponse>;
     writeFile(req: DocsWriteRequest): Promise<void>;
+  };
+  cr: {
+    list(req: CRListRequest): Promise<CRListResponse>;
+    get(req: CRGetRequest): Promise<ChangeRequest | null>;
+    create(req: CRCreateRequest): Promise<CRCreateResponse>;
+    readSpec(req: CRReadSpecRequest): Promise<CRReadSpecResponse>;
+    writeSpec(req: CRWriteSpecRequest): Promise<void>;
+    start(req: CRStartRequest): Promise<CRStartResponse>;
+    stop(req: CRStopRequest): Promise<void>;
+    approve(req: CRApproveRequest): Promise<CRApproveResponse>;
+    discard(req: CRDiscardRequest): Promise<void>;
   };
   shell: {
     info(): Promise<ShellInfo>;

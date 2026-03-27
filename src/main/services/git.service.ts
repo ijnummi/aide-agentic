@@ -111,6 +111,21 @@ export class GitService {
     await git(cwd, ['clean', '-fd']);
   }
 
+  async merge(cwd: string, branch: string): Promise<void> {
+    await git(cwd, ['merge', branch]);
+  }
+
+  async deleteBranch(cwd: string, branch: string, force?: boolean): Promise<void> {
+    await git(cwd, ['branch', force ? '-D' : '-d', branch]);
+  }
+
+  async push(cwd: string, branch: string, setUpstream?: boolean): Promise<void> {
+    const args = ['push'];
+    if (setUpstream) args.push('-u', 'origin', branch);
+    else args.push('origin', branch);
+    await git(cwd, args);
+  }
+
   async getRemoteUrl(cwd: string): Promise<string | null> {
     try {
       const output = await git(cwd, ['remote', 'get-url', 'origin']);

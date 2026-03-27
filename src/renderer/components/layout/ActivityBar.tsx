@@ -1,8 +1,9 @@
-import { Home, BookOpen, GitBranch, GitFork, Github, Terminal } from 'lucide-react';
+import { Home, ClipboardList, BookOpen, GitBranch, GitFork, Github, Terminal } from 'lucide-react';
 import { useUIStore, type SidebarPanel } from '../../stores/ui.store';
 
 const items: { panel: SidebarPanel; icon: typeof Terminal; label: string }[] = [
   { panel: 'home', icon: Home, label: 'Home' },
+  { panel: 'change-requests', icon: ClipboardList, label: 'Change Requests' },
   { panel: 'docs', icon: BookOpen, label: 'Definitions' },
   { panel: 'git', icon: GitBranch, label: 'Git' },
   { panel: 'worktrees', icon: GitFork, label: 'Worktrees' },
