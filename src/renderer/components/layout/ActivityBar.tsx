@@ -22,6 +22,7 @@ export function ActivityBar() {
         return (
           <button
             key={panel}
+            data-panel={panel}
             className={`flex items-center justify-center w-12 h-12 my-0.5 rounded transition-colors ${
               isActive
                 ? 'text-[var(--text-primary)] bg-[var(--bg-surface)] border-l-2 border-l-[var(--accent)]'
