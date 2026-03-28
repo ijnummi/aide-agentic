@@ -126,6 +126,8 @@ export interface AideAPI {
     stop(req: CRStopRequest): Promise<void>;
     approve(req: CRApproveRequest): Promise<CRApproveResponse>;
     discard(req: CRDiscardRequest): Promise<void>;
+    deleteAll(req: CRListRequest): Promise<void>;
+    debugReset(req: CRListRequest): Promise<void>;
   };
   shell: {
     info(): Promise<ShellInfo>;

@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useChangeRequestStore, type CRFilter } from '../../stores/change-request.store';
 import { useLayoutStore } from '../../stores/layout.store';
+import { startCR, stopCR, approveCR, discardCR } from '../../lib/cr-orchestration';
 import { CRCard } from './CRCard';
 import { CreateCRDialog } from './CreateCRDialog';
 import { IconButton } from '../shared/IconButton';
@@ -28,11 +29,7 @@ export function CRPanel() {
   const setFilter = useChangeRequestStore((s) => s.setFilter);
   const isLoading = useChangeRequestStore((s) => s.isLoading);
   const refresh = useChangeRequestStore((s) => s.refresh);
-  const createCR = useChangeRequestStore((s) => s.create);
-  const startCR = useChangeRequestStore((s) => s.start);
-  const stopCR = useChangeRequestStore((s) => s.stop);
-  const approveCR = useChangeRequestStore((s) => s.approve);
-  const discardCR = useChangeRequestStore((s) => s.discard);
+  const createFromStore = useChangeRequestStore((s) => s.create);
   const addTab = useLayoutStore((s) => s.addTab);
   const focusOrAddTab = useLayoutStore((s) => s.focusOrAddTab);
   const activePaneId = useLayoutStore((s) => s.activePaneId);
@@ -45,16 +42,15 @@ export function CRPanel() {
   }, [items, filter]);
 
   const handleCreate = useCallback(async (type: CRType, name: string, description: string) => {
-    const result = await createCR(type, name, description);
-    // Open the spec in an editor tab
+    const result = await createFromStore(type, name, description);
     const tab: TabItem = {
       id: `cr:${result.cr.id}`,
       type: 'cr-spec',
       title: result.cr.id,
-      metadata: { crId: result.cr.id, specPath: result.specPath },
+      metadata: { crId: result.cr.id },
     };
     addTab(activePaneId, tab);
-  }, [createCR, addTab, activePaneId]);
+  }, [createFromStore, addTab, activePaneId]);
 
   const handleEditSpec = useCallback((crId: string) => {
     const tab: TabItem = {
@@ -68,21 +64,19 @@ export function CRPanel() {
 
   const handleStart = useCallback(async (crId: string) => {
     await startCR(crId);
-    // TODO: orchestration — switch workspace, spawn Claude PTY
-  }, [startCR]);
+  }, []);
 
   const handleStop = useCallback(async (crId: string) => {
     await stopCR(crId);
-  }, [stopCR]);
+  }, []);
 
   const handleApprove = useCallback(async (crId: string) => {
-    // TODO: show ApproveDialog for merge strategy choice
     await approveCR(crId, 'merge');
-  }, [approveCR]);
+  }, []);
 
   const handleDiscard = useCallback(async (crId: string) => {
     await discardCR(crId);
-  }, [discardCR]);
+  }, []);
 
   const handleView = useCallback((crId: string) => {
     handleEditSpec(crId);

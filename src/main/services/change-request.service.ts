@@ -135,12 +135,39 @@ export class ChangeRequestService {
   }
 
   async stop(cwd: string, crId: string): Promise<void> {
+    const cr = await this.get(cwd, crId);
+    if (!cr) throw new Error(`Change request '${crId}' not found`);
+
+    // Stage all changes in the worktree before stopping
+    if (cr.worktreePath) {
+      try {
+        await this.gitService.stage(cr.worktreePath, ['-A']);
+      } catch { /* no changes to stage is fine */ }
+    }
+
     await this.updateFrontmatter(cwd, crId, { status: 'ready' });
   }
 
   async approve(cwd: string, crId: string, strategy: 'merge' | 'pr'): Promise<CRApproveResponse> {
     const cr = await this.get(cwd, crId);
     if (!cr) throw new Error(`Change request '${crId}' not found`);
+
+    // Check that master has no uncommitted changes
+    const masterStatus = await this.gitService.status(cwd);
+    const hasOpenChanges = masterStatus.staged.length > 0
+      || masterStatus.unstaged.length > 0
+      || masterStatus.untracked.length > 0;
+    if (hasOpenChanges) {
+      throw new Error('Master has uncommitted changes. Please commit or stash them before approving.');
+    }
+
+    // Commit all changes in the worktree branch
+    if (cr.worktreePath) {
+      try {
+        await this.gitService.stage(cr.worktreePath, ['-A']);
+        await this.gitService.commit(cr.worktreePath, `${crId}: implement change request`);
+      } catch { /* nothing to commit is fine */ }
+    }
 
     let prNumber: number | undefined;
     let prUrl: string | undefined;
@@ -197,6 +224,48 @@ export class ChangeRequestService {
       worktreePath: '',
       claudeSessionId: '',
     });
+  }
+
+  async deleteAll(cwd: string): Promise<void> {
+    const dir = this.crDir(cwd);
+    try {
+      await fs.rm(dir, { recursive: true, force: true });
+    } catch { /* directory may not exist */ }
+  }
+
+  /**
+   * Full debug reset: delete all non-main worktrees, their branches, and all CR files.
+   * Does NOT touch master branch files.
+   */
+  async debugReset(cwd: string): Promise<void> {
+    // List worktrees and remove non-main ones
+    const worktrees = await this.worktreeService.list(cwd);
+    for (const wt of worktrees) {
+      if (wt.isMain) continue;
+      try {
+        await this.worktreeService.remove(cwd, wt.path, true);
+      } catch { /* already gone */ }
+    }
+
+    // Prune stale worktree refs
+    try {
+      await this.worktreeService.prune(cwd);
+    } catch {}
+
+    // Delete all non-main branches
+    try {
+      const branches = await this.gitService.branches(cwd);
+      const mainBranch = (await this.gitService.status(cwd)).branch;
+      for (const branch of branches) {
+        if (branch === mainBranch) continue;
+        try {
+          await this.gitService.deleteBranch(cwd, branch, true);
+        } catch { /* may fail for checked-out branches */ }
+      }
+    } catch {}
+
+    // Delete all CR files
+    await this.deleteAll(cwd);
   }
 
   // --- Frontmatter parsing ---

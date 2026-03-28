@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import 'github-markdown-css/github-markdown-dark.css';
 import { Bug, Sparkles, Play, Square, Check, Trash2 } from 'lucide-react';
 import { getApi } from '../../lib/ipc';
+import { startCR, stopCR, approveCR, discardCR } from '../../lib/cr-orchestration';
 import { useChangeRequestStore } from '../../stores/change-request.store';
 import { useDocPreviewStore } from '../../stores/docpreview.store';
 import { useGitStore } from '../../stores/git.store';
@@ -42,10 +43,6 @@ export function CRSpecViewer({ crId }: CRSpecViewerProps) {
 
   const cwd = useChangeRequestStore((s) => s.cwd);
   const items = useChangeRequestStore((s) => s.items);
-  const startCR = useChangeRequestStore((s) => s.start);
-  const stopCR = useChangeRequestStore((s) => s.stop);
-  const approveCR = useChangeRequestStore((s) => s.approve);
-  const discardCR = useChangeRequestStore((s) => s.discard);
   const gitRefresh = useGitStore((s) => s.refresh);
 
   const cr = items.find((c) => c.id === crId);

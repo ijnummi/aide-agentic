@@ -49,4 +49,12 @@ export function registerChangeRequestHandlers(crService: ChangeRequestService) {
   ipcMain.handle(IPC.CR_DISCARD, (_event, req: CRDiscardRequest) => {
     return crService.discard(req.cwd, req.crId);
   });
+
+  ipcMain.handle(IPC.CR_DELETE_ALL, (_event, req: CRListRequest) => {
+    return crService.deleteAll(req.cwd);
+  });
+
+  ipcMain.handle(IPC.CR_DEBUG_RESET, (_event, req: CRListRequest) => {
+    return crService.debugReset(req.cwd);
+  });
 }

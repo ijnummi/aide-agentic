@@ -62,6 +62,8 @@ export const IPC = {
   CR_STOP: 'cr:stop',
   CR_APPROVE: 'cr:approve',
   CR_DISCARD: 'cr:discard',
+  CR_DELETE_ALL: 'cr:delete-all',
+  CR_DEBUG_RESET: 'cr:debug-reset',
 
   // Shell
   SHELL_INFO: 'shell:info',

@@ -36,23 +36,25 @@ export function firstPane(node: LayoutTree): PaneLeaf | null {
   return null;
 }
 
-/** Ensure the first pane has a primary Claude tab at index 0 */
+/** Ensure the first pane has a primary Claude tab scoped to `cwd` at index 0 */
 export function ensurePrimaryClaudeTab(cwd: string) {
   const layoutStore = useLayoutStore.getState();
+  const claudeStore = useClaudeStore.getState();
   if (!layoutStore.root) return;
 
   const pane = firstPane(layoutStore.root);
   if (!pane) return;
 
-  // Already has a primary Claude tab at position 0
-  if (pane.tabs[0]?.metadata?.isPrimary === true) return;
+  // Check if an existing primary Claude tab is scoped to this cwd
+  const existingPrimary = pane.tabs.find((t) => t.metadata?.isPrimary === true);
+  if (existingPrimary) {
+    const session = claudeStore.sessions.get(existingPrimary.id);
+    if (session?.cwd === cwd) return; // already correct
+    // Wrong cwd — remove the stale tab and create a fresh one
+    layoutStore.removeTab(pane.id, existingPrimary.id);
+  }
 
-  // Check if a primary Claude tab exists elsewhere in this pane
-  const existing = pane.tabs.find((t) => t.metadata?.isPrimary === true);
-  if (existing) return; // exists but not at 0 — leave it (user reordered)
-
-  // Create a new primary Claude session and insert at index 0
-  const claudeStore = useClaudeStore.getState();
+  // Create a new primary Claude session for this cwd
   const sessionId = claudeStore.createSession(cwd);
   const claudeTab: TabItem = {
     id: sessionId,
@@ -157,6 +159,7 @@ export async function switchWorkspace(newPath: string) {
   if (cached) {
     layoutStore.restoreLayout(cached.root);
     layoutStore.setActivePane(cached.activePaneId);
+    ensurePrimaryClaudeTab(newPath);
   } else if (!(await restoreFromDisk(newPath))) {
     await bootstrapFresh(newPath);
   }

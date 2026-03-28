@@ -29,6 +29,9 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
   const [stats, setStats] = useState<SessionStats | null>(null);
   const ptyCreated = useRef(false);
 
+  // Use the session's stored cwd (scoped to its worktree), not the current workspace
+  const sessionCwd = session?.cwd || cwd;
+
   // Spawn the claude CLI as a PTY (FitAddon will resize to actual size after mount)
   useEffect(() => {
     if (ptyCreated.current || !session) return;
@@ -45,7 +48,7 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
 
     getApi().pty.create({
       id: sessionId,
-      cwd,
+      cwd: sessionCwd,
       shell: 'claude',
       args,
       cols: 80,
@@ -54,14 +57,14 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
       useTerminalStore.getState().registerTerminal({
         id: sessionId,
         pid: response.pid,
-        cwd,
+        cwd: sessionCwd,
         shell: 'claude',
         title: 'Claude',
         status: 'running',
         createdAt: Date.now(),
       });
     });
-  }, [sessionId, session, claudeSessionId, cwd, terminals]);
+  }, [sessionId, session, claudeSessionId, sessionCwd, terminals]);
 
   // Watch the session JSONL for stats
   useEffect(() => {
@@ -107,7 +110,7 @@ export function ClaudePanel({ sessionId, cwd, isActive }: ClaudePanelProps) {
     <div className="flex flex-col h-full">
       {/* Stats bar */}
       <div className="flex items-center gap-3 px-3 h-7 bg-[var(--bg-secondary)] border-b border-[var(--border)] text-xs text-[var(--text-muted)] select-none">
-        <span className="text-[var(--text-secondary)]">{baseName(cwd)}</span>
+        <span className="text-[var(--text-secondary)]">{baseName(sessionCwd)}</span>
         {stats?.model && (
           <span className="text-[var(--text-secondary)]">{stats.model.replace('claude-', '').replace(/-\d+$/, '')}</span>
         )}

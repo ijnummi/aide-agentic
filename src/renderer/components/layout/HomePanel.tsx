@@ -1,4 +1,4 @@
-import { Terminal, Bot, GitBranch, GitFork, Github, Plus, FolderOpen } from 'lucide-react';
+import { Terminal, Bot, GitBranch, GitFork, Github, Plus, FolderOpen, RotateCcw } from 'lucide-react';
 import { useTerminalStore } from '../../stores/terminal.store';
 import { useClaudeStore } from '../../stores/claude.store';
 import { useGitStore } from '../../stores/git.store';
@@ -6,13 +6,15 @@ import { useWorktreeStore } from '../../stores/worktree.store';
 import { useGitHubStore } from '../../stores/github.store';
 import { useWorkspaceStore } from '../../stores/workspace.store';
 import { useLayoutStore } from '../../stores/layout.store';
+import { useChangeRequestStore } from '../../stores/change-request.store';
 import { useClaude } from '../../hooks/useClaude';
 import { getApi } from '../../lib/ipc';
-import { switchWorkspace } from '../../lib/workspace';
+import { switchWorkspace, bootstrapFresh, cleanupWorktreeTerminals } from '../../lib/workspace';
+import { disposeTerminal } from '../../hooks/useTerminal';
 import { claudeName } from '../../lib/names';
 import { baseName } from '../../lib/path';
 import type { TabItem } from '../../../shared/types/layout';
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 
 interface HomePanelProps {
   cwd: string;
@@ -39,6 +41,41 @@ export function HomePanel({ cwd }: HomePanelProps) {
   const terminalList = Array.from(terminals.values()).filter((t) => t.cwd === projectPath && t.shell !== 'claude');
   const claudeList = Array.from(claudeSessions.values()).filter((s) => s.cwd === projectPath);
   const totalChanges = gitStaged.length + gitUnstaged.length + gitUntracked.length;
+  const [resetting, setResetting] = useState(false);
+
+  const handleDebugReset = useCallback(async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      const mainWorktree = worktrees.find((w) => w.isMain);
+      const mainPath = mainWorktree?.path || projectPath;
+
+      // 1. Switch to master worktree
+      await switchWorkspace(mainPath);
+
+      // 2. Kill ALL terminals and claude sessions
+      for (const [id] of useTerminalStore.getState().terminals) {
+        disposeTerminal(id);
+        try { await useTerminalStore.getState().killTerminal(id); } catch {}
+      }
+      for (const [id] of useClaudeStore.getState().sessions) {
+        useClaudeStore.getState().removeSession(id);
+      }
+
+      // 3. Backend: delete worktrees, branches, CR files (single IPC call)
+      await getApi().cr.debugReset({ cwd: mainPath });
+
+      // 4. Refresh stores
+      await useWorktreeStore.getState().refresh();
+      await useGitStore.getState().refresh();
+      await useChangeRequestStore.getState().refresh();
+
+      // 5. Bootstrap fresh layout
+      await bootstrapFresh(mainPath);
+    } finally {
+      setResetting(false);
+    }
+  }, [worktrees, projectPath, resetting]);
 
   const handleNewTerminal = async () => {
     const id = await createTerminal(cwd);
@@ -165,6 +202,19 @@ export function HomePanel({ cwd }: HomePanelProps) {
           ))}
         </Section>
       )}
+
+      {/* Debug */}
+      <div className="pt-2 mt-2 border-t border-[var(--border)]">
+        <button
+          className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-[var(--error)] hover:bg-[var(--bg-surface)] w-full"
+          onClick={handleDebugReset}
+          disabled={resetting}
+          title="Delete all worktrees, branches, CRs, and reset to fresh state"
+        >
+          <RotateCcw size={14} className={resetting ? 'animate-spin' : ''} />
+          <span>{resetting ? 'Resetting...' : 'Debug: Full Reset'}</span>
+        </button>
+      </div>
     </div>
   );
 }

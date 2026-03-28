@@ -142,6 +142,7 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
         )}
         {activeTab?.type === 'claude' && (
           <ClaudePanel
+            key={activeTab.id}
             sessionId={activeTab.id}
             cwd={cwd}
             isActive={isActivePane}

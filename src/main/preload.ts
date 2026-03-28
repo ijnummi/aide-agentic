@@ -246,6 +246,12 @@ contextBridge.exposeInMainWorld('aide', {
     discard(req: CRDiscardRequest): Promise<void> {
       return ipcRenderer.invoke(IPC.CR_DISCARD, req);
     },
+    deleteAll(req: CRListRequest): Promise<void> {
+      return ipcRenderer.invoke(IPC.CR_DELETE_ALL, req);
+    },
+    debugReset(req: CRListRequest): Promise<void> {
+      return ipcRenderer.invoke(IPC.CR_DEBUG_RESET, req);
+    },
   },
 
   shell: {
