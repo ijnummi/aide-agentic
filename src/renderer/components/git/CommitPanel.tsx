@@ -20,7 +20,7 @@ export function CommitPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-1.5 px-1 mt-2">
+    <div data-section="commit-panel" className="flex flex-col gap-1.5 px-1 mt-2">
       <textarea
         className="w-full bg-[var(--bg-surface)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 resize-none outline-none border border-[var(--border)] focus:border-[var(--accent)] placeholder:text-[var(--text-muted)]"
         rows={3}

@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
-const PROJECT_ROOT = path.resolve(__dirname, '../..');
+const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 const ELECTRON_BIN = path.join(PROJECT_ROOT, 'node_modules/electron/dist/electron');
 const MAIN_JS = path.join(PROJECT_ROOT, '.vite/build-e2e/main.js');
 
@@ -38,17 +38,43 @@ export function createTestRepo(): string {
   return dir;
 }
 
+/** Creates a temp git repo with 3 commits and a clean working tree (no unstaged changes). */
+export function createCleanTestRepo(): string {
+  const dir = mkdtempSync(path.join(tmpdir(), 'aide-e2e-clean-'));
+
+  execSync('git init', { cwd: dir });
+  execSync('git config user.email "test@test.com"', { cwd: dir });
+  execSync('git config user.name "Test User"', { cwd: dir });
+
+  writeFileSync(path.join(dir, 'README.md'), '# Test Project\n');
+  execSync('git add -A && git commit -m "Initial commit"', { cwd: dir });
+
+  mkdirSync(path.join(dir, 'src'), { recursive: true });
+  writeFileSync(path.join(dir, 'src/app.ts'), 'export const app = true;\n');
+  execSync('git add -A && git commit -m "Add app module"', { cwd: dir });
+
+  writeFileSync(path.join(dir, 'src/utils.ts'), 'export function add(a: number, b: number) { return a + b; }\n');
+  execSync('git add -A && git commit -m "Add utils"', { cwd: dir });
+
+  return dir;
+}
+
 type TestFixtures = {
   electronApp: ElectronApplication;
   page: Page;
   testRepo: string;
+  cleanTestRepo: string;
 };
 
 export const test = base.extend<TestFixtures>({
   testRepo: async ({}, use) => {
     const dir = createTestRepo();
     await use(dir);
-    // Cleanup is best-effort; tmp dirs get cleaned by OS
+  },
+
+  cleanTestRepo: async ({}, use) => {
+    const dir = createCleanTestRepo();
+    await use(dir);
   },
 
   electronApp: async ({ testRepo }, use) => {

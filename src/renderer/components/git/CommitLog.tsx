@@ -12,13 +12,14 @@ export function CommitLog({ onSelectCommit }: CommitLogProps) {
   if (log.length === 0) return null;
 
   return (
-    <div className="mt-3">
+    <div className="mt-3" data-section="commit-log">
       <div className="flex items-center gap-1 px-1 py-0.5 text-[var(--text-muted)] uppercase tracking-wider text-[10px]">
         Commits ({log.length})
       </div>
       {log.map((entry) => (
         <div
           key={entry.hash}
+          data-testid="commit-entry"
           className="flex items-start gap-2 px-2 py-1 rounded cursor-pointer hover:bg-[var(--bg-surface)] group"
           onClick={() => onSelectCommit?.(entry)}
           title={commitTooltip(entry)}

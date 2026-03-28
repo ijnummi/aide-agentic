@@ -82,7 +82,7 @@ export function GitStatus({ onOpenDiff, onOpenAllChanges }: GitStatusProps) {
 
       {/* Staged changes */}
       {staged.length > 0 && (
-        <div>
+        <div data-section="staged">
           <div className="flex items-center gap-1 px-1 py-0.5 text-[var(--text-muted)] uppercase tracking-wider">
             Staged ({staged.length})
           </div>
@@ -98,7 +98,7 @@ export function GitStatus({ onOpenDiff, onOpenAllChanges }: GitStatusProps) {
 
       {/* Unstaged changes */}
       {unstaged.length > 0 && (
-        <div>
+        <div data-section="changes">
           <div className="flex items-center gap-1 px-1 py-0.5 text-[var(--text-muted)] uppercase tracking-wider">
             Changes ({unstaged.length})
             <div className="flex-1" />
@@ -117,7 +117,7 @@ export function GitStatus({ onOpenDiff, onOpenAllChanges }: GitStatusProps) {
 
       {/* Untracked */}
       {untracked.length > 0 && (
-        <div>
+        <div data-section="untracked">
           <div className="flex items-center gap-1 px-1 py-0.5 text-[var(--text-muted)] uppercase tracking-wider">
             Untracked ({untracked.length})
           </div>

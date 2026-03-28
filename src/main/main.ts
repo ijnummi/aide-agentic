@@ -49,11 +49,14 @@ function createWindow() {
   const saved = windowStore.get('bounds');
   const wasMaximized = windowStore.get('maximized');
 
+  const isTest = process.env.NODE_ENV === 'test';
+
   mainWindow = new BrowserWindow({
     width: saved.width || 1400,
     height: saved.height || 900,
-    x: saved.x,
-    y: saved.y,
+    x: isTest ? 3839 : saved.x,
+    y: isTest ? 100 : saved.y,
+    focusable: !isTest,
     minWidth: 800,
     minHeight: 600,
     title: 'AIDE',
