@@ -7,7 +7,7 @@ AIDE (AI Development Environment) is an Electron desktop app for managing AI ter
 - **Runtime**: Electron + Node.js
 - **Build**: Electron Forge + Vite
 - **Frontend**: React 19 + TypeScript (strict mode)
-- **State**: Zustand 5 with immer middleware
+- **State**: Zustand 5
 - **Styling**: Tailwind CSS 4 (utility-first, no CSS-in-JS)
 - **Terminal**: @xterm/xterm + node-pty
 - **Layout**: allotment (split panes)
@@ -51,19 +51,26 @@ AIDE (AI Development Environment) is an Electron desktop app for managing AI ter
 - Lazy-mount xterm.js terminals (never `display:none`, use `visibility:hidden` or unmount)
 
 ### Testing
-- Unit tests alongside source in `tests/unit/`
-- E2E tests in `tests/e2e/`
-- Run: `pnpm test` (unit), `pnpm test:e2e` (Playwright)
+- Unit tests in `tests/unit/` mirroring `src/` structure
+- E2E tests in `tests/e2e/` using Playwright Electron API
+- Shared IPC mock at `tests/unit/renderer/stores/helpers/mock-api.ts` — use `installMockApi()` for store tests that call `getApi()`
+- Vitest config: two projects — `main` (node env) and `renderer` (jsdom env) with path aliases
+- E2E config: global setup builds main+preload for tests, starts Vite renderer dev server
+- E2E fixtures create a temp git repo per test and launch a fresh Electron instance
+- Add `data-*` attributes to components for e2e test targeting (e.g. `data-panel` on ActivityBar)
 
 ## Common Commands
 ```bash
-pnpm dev          # Start Electron in dev mode with HMR
-pnpm build        # Production build
-pnpm make         # Package for distribution
-pnpm test         # Run unit tests (Vitest)
-pnpm test:e2e     # Run E2E tests (Playwright)
-pnpm lint         # ESLint
-pnpm format       # Prettier
+pnpm dev            # Start Electron in dev mode with HMR
+pnpm build          # Production build
+pnpm make           # Package for distribution
+pnpm test           # Run unit tests (Vitest)
+pnpm test:watch     # Run unit tests in watch mode
+pnpm test:coverage  # Run unit tests with coverage (text + HTML + JSON)
+pnpm test:ci        # Run unit tests with coverage + JUnit XML report
+pnpm test:e2e       # Run E2E tests (Playwright + Electron)
+pnpm lint           # ESLint
+pnpm format         # Prettier
 ```
 
 ## Key Technical Notes
@@ -72,3 +79,8 @@ pnpm format       # Prettier
 - Claude Code CLI: use `--output-format stream-json --verbose --include-partial-messages`
 - Git: use `--porcelain=v2` for machine-readable status output
 - Git worktrees: use `--porcelain` for machine-readable worktree list
+- Git log: uses `--shortstat` with custom separator for parsing files changed/additions/deletions
+- All configurable values live in `src/shared/settings.ts` (`DEFAULT_SETTINGS`) — never hardcode
+- Coverage provider: `@vitest/coverage-v8`; reports to `coverage/` (gitignored)
+- E2E build output: `.vite/build-e2e/` (gitignored under `.vite/`)
+- E2E Vite configs in `tests/e2e/vite.e2e-{main,preload}.config.ts` mirror forge plugin settings (`resolve.conditions: ['node']`, Node builtins externalized)
