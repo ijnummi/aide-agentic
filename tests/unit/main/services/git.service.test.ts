@@ -86,19 +86,23 @@ describe('GitService.status', () => {
 });
 
 describe('GitService.log', () => {
-  it('parses log entries from custom format', async () => {
+  it('parses log entries with shortstat', async () => {
     mockExec.mockResolvedValue({
       stdout: [
+        '---commit-sep---',
         'abc123full',
         'abc123',
         'John Doe',
         '2025-01-15 10:00:00 +0200',
         'Fix the thing',
+        ' 3 files changed, 10 insertions(+), 2 deletions(-)',
+        '---commit-sep---',
         'def456full',
         'def456',
         'Jane Doe',
         '2025-01-14 09:00:00 +0200',
         'Add feature',
+        ' 1 file changed, 5 insertions(+)',
         '',
       ].join('\n'),
     });
@@ -111,8 +115,14 @@ describe('GitService.log', () => {
       author: 'John Doe',
       date: '2025-01-15 10:00:00 +0200',
       message: 'Fix the thing',
+      filesChanged: 3,
+      additions: 10,
+      deletions: 2,
     });
     expect(entries[1].message).toBe('Add feature');
+    expect(entries[1].filesChanged).toBe(1);
+    expect(entries[1].additions).toBe(5);
+    expect(entries[1].deletions).toBeUndefined();
   });
 
   it('returns empty array for empty output', async () => {

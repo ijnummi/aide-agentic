@@ -61,6 +61,12 @@ export interface AideSettings {
     scrollbarRadius: number;    // px
   };
 
+  /** Git */
+  git: {
+    logCount: number;           // number of recent commits to show
+    commitTabMaxTitle: number;  // max characters for commit diff tab title
+  };
+
   /** Claude */
   claude: {
     contextWindowSize: number;  // tokens — default context window for % display
@@ -199,6 +205,11 @@ export const DEFAULT_SETTINGS: AideSettings = {
     borderWidth: 1,
     scrollbarWidth: 8,
     scrollbarRadius: 4,
+  },
+
+  git: {
+    logCount: 10,
+    commitTabMaxTitle: 40,
   },
 
   claude: {

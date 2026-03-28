@@ -26,6 +26,7 @@ export const IPC = {
   GIT_BRANCHES: 'git:branches',
   GIT_CHECKOUT: 'git:checkout',
   GIT_REVERT_ALL: 'git:revert-all',
+  GIT_SHOW: 'git:show',
 
   // GitHub
   GITHUB_AUTH: 'github:auth',

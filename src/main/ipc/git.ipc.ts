@@ -35,4 +35,8 @@ export function registerGitHandlers(gitService: GitService) {
   ipcMain.handle(IPC.GIT_REVERT_ALL, (_event, cwd: string) => {
     return gitService.revertAll(cwd);
   });
+
+  ipcMain.handle(IPC.GIT_SHOW, (_event, cwd: string, ref: string) => {
+    return gitService.show(cwd, ref);
+  });
 }

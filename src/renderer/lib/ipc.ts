@@ -85,6 +85,7 @@ export interface AideAPI {
     branches(cwd: string): Promise<string[]>;
     checkout(cwd: string, branch: string): Promise<void>;
     revertAll(cwd: string): Promise<void>;
+    show(cwd: string, ref: string): Promise<string>;
   };
   worktree: {
     list(cwd: string): Promise<WorktreeInfo[]>;

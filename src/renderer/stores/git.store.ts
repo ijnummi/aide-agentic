@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import type { GitStatusResponse, FileChange, DiffFile } from '../../shared/types/git';
+import type { GitStatusResponse, FileChange, DiffFile, GitLogEntry } from '../../shared/types/git';
 import { getApi } from '../lib/ipc';
 import { parseDiff } from '../lib/diff-parser';
+import { DEFAULT_SETTINGS } from '../../shared/settings';
 
 interface GitStore {
   cwd: string;
@@ -13,17 +14,20 @@ interface GitStore {
   unstaged: FileChange[];
   untracked: string[];
   branches: string[];
+  log: GitLogEntry[];
   isLoading: boolean;
   lastUpdated: number;
 
   setCwd: (cwd: string) => void;
   refresh: () => Promise<void>;
   refreshBranches: () => Promise<void>;
+  refreshLog: () => Promise<void>;
   stage: (files: string[]) => Promise<void>;
   commit: (message: string) => Promise<void>;
   checkout: (branch: string) => Promise<void>;
   revertAll: () => Promise<void>;
   getDiff: (staged?: boolean, file?: string) => Promise<DiffFile[]>;
+  getCommitDiff: (hash: string) => Promise<DiffFile[]>;
 }
 
 export const useGitStore = create<GitStore>((set, get) => ({
@@ -36,6 +40,7 @@ export const useGitStore = create<GitStore>((set, get) => ({
   unstaged: [],
   untracked: [],
   branches: [],
+  log: [],
   isLoading: false,
   lastUpdated: 0,
 
@@ -57,6 +62,7 @@ export const useGitStore = create<GitStore>((set, get) => ({
         untracked: status.untracked,
         lastUpdated: Date.now(),
       });
+      get().refreshLog();
     } catch {
       // Not a git repo or git not available
     } finally {
@@ -70,6 +76,17 @@ export const useGitStore = create<GitStore>((set, get) => ({
     try {
       const branches = await getApi().git.branches(cwd);
       set({ branches });
+    } catch {
+      // ignore
+    }
+  },
+
+  refreshLog: async () => {
+    const { cwd } = get();
+    if (!cwd) return;
+    try {
+      const log = await getApi().git.log(cwd, DEFAULT_SETTINGS.git.logCount);
+      set({ log });
     } catch {
       // ignore
     }
@@ -103,6 +120,12 @@ export const useGitStore = create<GitStore>((set, get) => ({
   getDiff: async (staged, file) => {
     const { cwd } = get();
     const raw = await getApi().git.diff({ cwd, staged, file });
+    return parseDiff(raw);
+  },
+
+  getCommitDiff: async (hash) => {
+    const { cwd } = get();
+    const raw = await getApi().git.show(cwd, hash);
     return parseDiff(raw);
   },
 }));

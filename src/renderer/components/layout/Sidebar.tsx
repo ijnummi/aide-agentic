@@ -5,6 +5,7 @@ import { diffName, prName } from '../../lib/names';
 import { GitStatus } from '../git/GitStatus';
 import { BranchSelector } from '../git/BranchSelector';
 import { CommitPanel } from '../git/CommitPanel';
+import { CommitLog } from '../git/CommitLog';
 import { WorktreeList } from '../worktree/WorktreeList';
 import { DocsPanel } from '../docs/DocsPanel';
 import { CRPanel } from '../change-requests/CRPanel';
@@ -14,6 +15,8 @@ import { useGitHubStore } from '../../stores/github.store';
 import { useCallback } from 'react';
 import { useWorkspaceStore } from '../../stores/workspace.store';
 import type { TabItem } from '../../../shared/types/layout';
+import type { GitLogEntry } from '../../../shared/types/git';
+import { DEFAULT_SETTINGS } from '../../../shared/settings';
 
 const panelTitles: Record<string, string> = {
   home: 'Home',
@@ -68,6 +71,23 @@ export function Sidebar() {
     setActiveTab(activePaneId, tab.id);
   }, [getDiff, insertTabAt, setActiveTab, removeTabById, activePaneId]);
 
+  const handleSelectCommit = useCallback((entry: GitLogEntry) => {
+    const maxLen = DEFAULT_SETTINGS.git.commitTabMaxTitle;
+    const raw = `${entry.shortHash}: ${entry.message}`;
+    const title = raw.length > maxLen ? raw.slice(0, maxLen - 1) + '…' : raw;
+
+    // Remove existing commit diff tab so only one exists at a time
+    removeTabById('commit-diff');
+
+    const tab: TabItem = {
+      id: 'commit-diff',
+      type: 'diff',
+      title,
+      metadata: { commitHash: entry.hash },
+    };
+    addTab(activePaneId, tab);
+  }, [addTab, removeTabById, activePaneId]);
+
   return (
     <div
       className="flex flex-col bg-[var(--bg-secondary)] border-r border-[var(--border)] overflow-hidden"
@@ -91,6 +111,7 @@ export function Sidebar() {
             <BranchSelector />
             <GitStatus onOpenDiff={handleOpenDiff} onOpenAllChanges={handleOpenAllChanges} />
             <CommitPanel />
+            <CommitLog onSelectCommit={handleSelectCommit} />
           </div>
         )}
         {activeSidebarPanel === 'worktrees' && (

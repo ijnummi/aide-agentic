@@ -20,6 +20,9 @@ export interface GitLogEntry {
   author: string;
   date: string;
   message: string;
+  filesChanged?: number;
+  additions?: number;
+  deletions?: number;
 }
 
 export interface DiffLine {

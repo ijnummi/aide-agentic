@@ -141,6 +141,9 @@ contextBridge.exposeInMainWorld('aide', {
     revertAll(cwd: string): Promise<void> {
       return ipcRenderer.invoke(IPC.GIT_REVERT_ALL, cwd);
     },
+    show(cwd: string, ref: string): Promise<string> {
+      return ipcRenderer.invoke(IPC.GIT_SHOW, cwd, ref);
+    },
   },
 
   worktree: {

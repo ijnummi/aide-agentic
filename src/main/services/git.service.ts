@@ -67,19 +67,36 @@ export class GitService {
   }
 
   async log(cwd: string, count = 20): Promise<GitLogEntry[]> {
-    const format = '%H%n%h%n%an%n%ai%n%s';
-    const output = await git(cwd, ['log', `--format=${format}`, `-n`, String(count)]);
-    const lines = output.split('\n');
+    const SEP = '---commit-sep---';
+    const format = `${SEP}%n%H%n%h%n%an%n%ai%n%s`;
+    const output = await git(cwd, ['log', `--format=${format}`, '--shortstat', `-n`, String(count)]);
+    const chunks = output.split(SEP).filter(Boolean);
     const entries: GitLogEntry[] = [];
 
-    for (let i = 0; i + 4 < lines.length; i += 5) {
-      entries.push({
-        hash: lines[i],
-        shortHash: lines[i + 1],
-        author: lines[i + 2],
-        date: lines[i + 3],
-        message: lines[i + 4],
-      });
+    for (const chunk of chunks) {
+      const lines = chunk.split('\n').filter((l) => l !== '');
+      if (lines.length < 5) continue;
+
+      const entry: GitLogEntry = {
+        hash: lines[0],
+        shortHash: lines[1],
+        author: lines[2],
+        date: lines[3],
+        message: lines[4],
+      };
+
+      // shortstat line looks like: " 3 files changed, 10 insertions(+), 2 deletions(-)"
+      const statLine = lines[5];
+      if (statLine) {
+        const filesMatch = statLine.match(/(\d+) file/);
+        const addMatch = statLine.match(/(\d+) insertion/);
+        const delMatch = statLine.match(/(\d+) deletion/);
+        if (filesMatch) entry.filesChanged = parseInt(filesMatch[1], 10);
+        if (addMatch) entry.additions = parseInt(addMatch[1], 10);
+        if (delMatch) entry.deletions = parseInt(delMatch[1], 10);
+      }
+
+      entries.push(entry);
     }
 
     return entries;
@@ -124,6 +141,10 @@ export class GitService {
     if (setUpstream) args.push('-u', 'origin', branch);
     else args.push('origin', branch);
     await git(cwd, args);
+  }
+
+  async show(cwd: string, ref: string): Promise<string> {
+    return git(cwd, ['show', ref, '--format=']);
   }
 
   async getRemoteUrl(cwd: string): Promise<string | null> {

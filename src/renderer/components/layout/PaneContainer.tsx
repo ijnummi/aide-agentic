@@ -151,7 +151,10 @@ export function PaneContainer({ pane, cwd }: PaneContainerProps) {
         {activeTab?.type === 'diff' && activeTab.id === 'diff-all-changes' && (
           <AllChangesDiffLoader cwd={cwd} scrollToFile={activeTab.metadata.scrollToFile as string | undefined} />
         )}
-        {activeTab?.type === 'diff' && activeTab.id !== 'diff-all-changes' && (
+        {activeTab?.type === 'diff' && activeTab.id !== 'diff-all-changes' && !!activeTab.metadata.commitHash && (
+          <CommitDiffLoader cwd={cwd} commitHash={activeTab.metadata.commitHash as string} />
+        )}
+        {activeTab?.type === 'diff' && activeTab.id !== 'diff-all-changes' && !activeTab.metadata.commitHash && (
           <DiffViewer files={(activeTab.metadata.diffFiles as DiffFile[]) || []} scrollToFile={activeTab.metadata.scrollToFile as string | undefined} />
         )}
         {activeTab?.type === 'pr' && (
@@ -201,6 +204,21 @@ function AllChangesDiffLoader({ cwd, scrollToFile }: { cwd: string; scrollToFile
   }, [getDiff, lastUpdated]);
 
   return <DiffViewer files={files} scrollToFile={scrollToFile} />;
+}
+
+function CommitDiffLoader({ cwd, commitHash }: { cwd: string; commitHash: string }) {
+  const getCommitDiff = useGitStore((s) => s.getCommitDiff);
+  const [files, setFiles] = useState<DiffFile[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCommitDiff(commitHash).then((result) => {
+      if (!cancelled) setFiles(result);
+    });
+    return () => { cancelled = true; };
+  }, [getCommitDiff, commitHash]);
+
+  return <DiffViewer files={files} />;
 }
 
 function PRDetailLoader({ cwd, prNumber, selectPR }: { cwd: string; prNumber: number; selectPR: (cwd: string, n: number) => Promise<void> }) {
